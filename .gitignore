@@ -1,0 +1,45 @@
+# Identifiants, configurations locales et caches
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.firecrawl/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.pytest_cache/
+.sauvegarde*/
+
+# Sources et résultats réservés au concours : ne pas publier sur GitHub public
+/00_sources/
+/01_collecte/
+/02_nettoyage/
+/03_transformation/
+/04_analyse/
+/05_interpretation/
+/DCB/
+/livraison_v*/
+/tableau_de_bord/donnees.js
+*.zip
+*.pdf
+*.xlsx
+*.xls
+*.csv
+*.tsv
+*.parquet
+*.geojson
+
+# Rapports et audits contenant des extraits des données du concours
+/documentation/EXX_*
+/documentation/audit_sources/
+/documentation/COMPLEMENTS_WEB_2026.md
+/documentation/AUDIT_SOURCES_DATAPACK.md
+/documentation/INVENTAIRE_*.md
+/documentation/NOTICE_CONTEXTE_ESU.md
+/documentation/VERIFICATION_SOURCES_ET_ACCESSIBILITE.md
+
+# Notice locale de la livraison complète
+/LISEZ-MOI.md
