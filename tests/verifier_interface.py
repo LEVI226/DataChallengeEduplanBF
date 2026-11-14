@@ -14,10 +14,13 @@ def verifier():
         browser = p.chromium.launch()
         page = browser.new_page(accept_downloads=True)
         errors = []
+        network = []
+        page.on('request', lambda request: network.append(request.url) if request.url.startswith(('http://','https://')) else None)
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.on('console', lambda message: errors.append(message.text) if message.type == 'error' else None)
         page.goto(url)
         assert page.locator('#lignes tr').count() == 45
+        assert 'Sélectionnez un territoire' in page.locator('#detail').inner_text(), 'La simulation initiale valide doit inviter à sélectionner une province'
         # fill émet input, sans blur/change : aucune ancienne simulation ne doit rester exportable.
         page.locator('#budget-maitres').fill('-1')
         assert page.locator('#erreur').is_visible(), 'Une saisie négative doit signaler immédiatement son erreur'
@@ -26,6 +29,7 @@ def verifier():
         assert page.locator('#export').is_disabled()
         page.locator('#budget-maitres').fill('0')
         assert page.locator('#erreur').is_hidden()
+        assert 'Sélectionnez un territoire' in page.locator('#detail').inner_text(), 'Le rétablissement sans province sélectionnée doit rétablir l’invitation'
         assert '0 maîtres supplémentaires' in page.locator('#perimetre').inner_text()
         page.locator('#region').select_option(label='SAHEL')
         assert page.locator('#lignes tr').count() < 45
@@ -57,6 +61,7 @@ def verifier():
         page.set_viewport_size({'width': 390, 'height': 844})
         assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
         assert not errors, errors
+        assert not network, network
         browser.close()
     print('Interface : input sans blur, erreur immédiate, invalidation/export, scénarios, statuts ESU, CSV national et mobile OK.')
 

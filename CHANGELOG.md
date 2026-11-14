@@ -13,6 +13,33 @@ Modèle :
 
 ---
 
+## 2026-11-14 — Rapport V3 centré sur la décision
+- Page 1 : trois chiffres clés et carte avant/après ; arbitrage entre les règles explicite dès l’ouverture. Rapport réduit à neuf pages et quatre figures, audits condensés et limites regroupées en partie 6.
+- Notice : accès au tableau de bord sans installation en première ligne. Version de la livraison distincte des tables de calcul _v1 inchangées ; pas de renommage artificiel des sources ou résultats.
+- Fiche de 20 lignes à comparer aux PDF, couvrant les 13 régions : toutes NON_VERIFIE, aucun contrôle humain inventé ni formulaire rempli écrasé.
+- Message initial du panneau de détail corrigé ; tests navigateur initial, retour valide, exports, mobile et absence de requêtes HTTP. 31 tests Python et moteur JavaScript réussis.
+- V1 et V2 conservées ; aucun dépôt, hébergement ou push effectué.
+
+## 2026-11-14 — Livraison V2 avec audits et compléments communaux
+- Rapport actualisé en onze pages, sept parties ; conclusions provinciales inchangées, rapprochements récents et données communales intégrés avec leurs limites.
+- Dix fichiers de dépôt dont sept ZIP ; sources complémentaires séparées pour respecter 50 Mo par fichier. EXX reste provisoire ; V1 intacte.
+- Générateur versionné, protection des dossiers, exclusion des produits futurs en V1, refus de doublons ; tests de régression inclus.
+- Reproduction en environnement neuf : chaîne, compléments, audit ESU, 28 tests Python et moteur JavaScript réussis ; 38 CSV identiques par SHA-256.
+- Aucun dépôt ni push ; preuves : `documentation/VERIFICATION_LIVRAISON_V2.md`.
+
+## 2026-11-14 — Rapprochement DGESS/ODFA et communes Centre-Est/Est
+- Extraction de 1 125 cellules sources et d’une table de 1 005 cellules pour 57 communes, huit provinces et deux régions, sur cinq indicateurs 2023-2024 dont les fermetures d’écoles.
+- 645 contrôles : 622 conformes, 21 alertes présentes dans les publications de l’Est, deux relations invérifiables dues à une case source vide. Aucune imputation ni correction silencieuse.
+- Extraction de 135 cellules de tous les enseignants directement du PDF CNS529 ; 45 contrôles femmes + hommes = total conformes. Les 39 comparaisons régionales ODFA 2024 / DGESS 2023-2024 concordent.
+- Trois divergences avec les annuaires régionaux précisées : salles et tous enseignants au Centre-Nord, total des élèves à l’Est. Les données du modèle principal sont conservées.
+- Scripts, pièces et limites : `01_collecte/rapprochement_20261114/LISEZ-MOI.md`. Aucun changement des archives V1 ni publication GitHub.
+
+## 2026-11-14 — Données complémentaires INSD et Open Data, locales
+- Acquisition de quatre séries ODFA, 2 149 observations jusqu’au libellé 2024 ; conversion traçable en CSV et 581 contrôles, dont neuf alertes conservées.
+- Ajout du livret INSD Genre 2023, édition 2024 : 35 valeurs numériques sur l’accès et les motifs déclarés de non-scolarisation, issues de l’EHCVM 2021-2022.
+- Archivage des métadonnées publiques EHCVM et RGPH ; aucun fichier individuel téléchargé. Divergences Centre-Nord et limites des périodes documentées.
+- Résultats et reproduction : `01_collecte/complements_insd_20261114/LISEZ-MOI.md`. Aucun changement du modèle, de la livraison V1 ou du dépôt distant GitHub.
+
 ## 2026-11-14 — Préparation du dépôt GitHub public
 - Ajout d’un README public et de règles Git excluant sources, tables, données embarquées, archives de livraison, caches et identifiants.
 - Conservation locale de la livraison complète ; publication du code, des tests et de la documentation technique.

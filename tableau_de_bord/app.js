@@ -18,7 +18,7 @@
   $('scenario').innerHTML=data.scenarios.map(s=>`<option value="${esc(s.id)}">${esc(s.label)}</option>`).join('');
   $('region').innerHTML+=[...new Set(data.provinces.map(p=>p.region))].sort((a,b)=>a.localeCompare(b,'fr')).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
   $('sources').innerHTML=(data.sources||[]).map(s=>`<li><strong>${esc(s.titre)}</strong> · ${esc(s.producteur)}${s.detail?' — '+esc(s.detail):''}</li>`).join('');
-  $('version').textContent=`Annuaire ${data.meta.annee} · Horizon ${data.meta.horizon} · Version ${data.meta.version||'1'}.`;
+  $('version').textContent=`Annuaire ${data.meta.annee} · Horizon ${data.meta.horizon} · Version des données ${data.meta.version||'1'}.`;
   $('esu-note').textContent=`ESU au ${dateFr(data.meta.date_esu)} (février 2026) : données de contexte, public et privé non distingués. Les valeurs absentes sont affichées « non renseigné » et ne valent pas zéro.`;
   $('parametres-form').addEventListener('submit',e=>{e.preventDefault();calculer();});
   $('parametres-form').addEventListener('change',calculer);
@@ -58,7 +58,7 @@
   const signal=data.provinces.reduce((v,p,i)=>v+Math.max(0,p.maitres+m.regles[state.regle].ajout[i]-p.salles-s.regles[state.regle].ajout[i]),0);
   $('signal').textContent=`Signal comptable : somme des écarts positifs entre maîtres et salles après allocation = ${fmt(signal)}. Les ressources sont allouées séparément ; cet écart ne permet pas de déduire une situation individuelle de classe ou d’enseignant.`;
   $('titre-carte').textContent=`Élèves / ${r==='maitres'?'maître':'salle'} · après allocation`;
-  carte();tableau();if(selected!==null)detail(selected);
+  carte();tableau();if(selected!==null)detail(selected);else $('detail').innerHTML='<p class="eyebrow">PROVINCE</p><h3>Sélectionnez un territoire</h3><p>Survolez ou sélectionnez une province pour consulter son allocation et le contexte ESU.</p>';
  }
  function visibles(){return data.provinces.map((p,i)=>({p,i})).filter(({p})=>!$('region').value||p.region===$('region').value);}
  function ratios(i,r){const stock=state.resultats[r].stock[i],ajout=state.resultats[r].regles[state.regle].ajout[i];return {avant:state.eleves[i]/stock,apres:state.eleves[i]/(stock+ajout),ajout};}

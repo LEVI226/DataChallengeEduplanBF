@@ -24,7 +24,10 @@ def lire(root, dossier, fragment):
     return pd.read_csv(paths[0])
 
 
-def contenu(root):
+def contenu(root,version=1):
+    if version==3:
+        from rapport_jury import contenu_jury
+        return contenu_jury(root,contenu(root,version=1))
     d = lire(root,'03_transformation','indicateurs-provinces-public')
     d = d[d.annee_scolaire == '2024-2025']
     sens = lire(root,'04_analyse','sensibilite-seuils')
@@ -46,7 +49,7 @@ def contenu(root):
         blocks.append(('fig',(paths[0],caption)))
     h('1. Le défi')
     p('Répartir les maîtres et les salles du primaire public : rendre visible l’arbitrage')
-    p('Data Challenge Burkina — édition Éducation 2026 — Défi 3 — Version finale V1')
+    p(f'Data Challenge Burkina — édition Éducation 2026 — Défi 3 — Version de dépôt V{version}')
     p('Comment répartir des moyens supplémentaires entre provinces lorsque l’objectif est de réduire les disparités de charge ? La solution compare trois règles pour un même nombre de maîtres ou de salles, puis permet de modifier les hypothèses dans un simulateur local.')
     p(f'La référence porte sur {len(d)} anciennes provinces et {fmt(d.eleves.sum())} élèves inscrits dans le primaire public en 2024–2025. Le nombre d’inscrits est une observation administrative ; il ne représente pas tous les enfants en âge de fréquenter le primaire.')
     p('Le décideur visé prépare les affectations et la programmation des infrastructures. Il dispose d’un diagnostic, de scénarios conditionnels et d’une répartition détaillée. Les quantités sont des unités physiques ; aucun coût ni budget monétaire n’est estimé.')
@@ -129,11 +132,47 @@ def contenu(root):
     p('DGESS / MEBAPLN : Rapport statistique mensuel ESU de février 2026, publié en mars 2026, observation au 28 février 2026 ; annexes 1, 2 et 4, PDF p. 15–20. COD-AB : limites administratives du Burkina Faso, couche admin2 du Data Pack, correspondance documentée vers les anciennes provinces.')
     p('Usage de l’intelligence artificielle — déclaration')
     p(DECLARATION_IA)
+    if version==2:
+        from complements_livraison import indicateurs_audit
+        a=indicateurs_audit(root)
+        pos=next(i for i,b in enumerate(blocks) if b==('h','4. La méthode'))-1
+        audit=[('page',None),('p','Préparation — rapprochement des publications et données communales'),
+            ('p',f"Les sources complémentaires apportent {a['cellules_sources']} cellules publiées et une table de {a['cellules']} cellules sans double comptage des récapitulatifs : {a['communes']} communes du Centre-Est et de l’Est, huit provinces et deux régions, cinq indicateurs et trois statuts en 2023–2024. Le périmètre du simulateur reste le primaire public provincial 2024–2025."),
+            ('table', [['Contrôle documentaire','Résultat','Portée'],
+                ['ODFA 2024 / DGESS 2023–2024',f"{a['rapprochements_conformes']}/{a['rapprochements']} concordances",'13 régions ; écoles, salles, tous enseignants'],
+                ['Totaux des deux annuaires',f"{a['conformes']} conformes ; {a['alertes']} alertes",'Relations arithmétiques ; pas des collectes indépendantes'],
+                ['Relations non vérifiables',str(a['non_verifiables']),'Une case source vide, non imputée']]),
+            ('p','La case écoles privées de Bissiga est vide dans le PDF ; elle reste manquante. Les alertes de l’Est concernent les sommes de communes ou de provinces. Les récapitulatifs répétés sont comparés, puis une seule copie de référence est conservée, sans corriger les valeurs publiées.'),
+            ('table',[['Écart régional, public + privé','Annuaire régional','DGESS'],*[ [r['region']+' / '+{'salles':'salles','enseignants':'tous enseignants','eleves':'élèves'}[r['indicateur']],fmt(r['valeur_annuaire_regional']),fmt(r['valeur_cns'])] for r in a['ecarts']]]),
+            ('p','La DGESS confirme 3 506 salles et 6 321 enseignants au Centre-Nord, contre 5 592 et 6 301 dans l’annuaire régional. Pour l’Est, la somme provinciale des élèves concorde avec 118 267 à la DGESS ; le total régional publié est 118 367. Le modèle national reste fondé sur la DGESS.'),
+            ('p','Le rapprochement de tous les enseignants s’appuie sur 135 cellules du tableau IV.1.3 de CNS529 (PDF p. 206–212), avec femmes + hommes = total dans 45 provinces. Au Centre-Nord, 6 321 enseignants au total se distinguent des 3 305 maîtres chargés de cours : les dénominateurs ne sont pas interchangeables. Les neuf alertes historiques ODFA restent non résolues ; les concordances du millésime récent ne les valident pas.')]
+        blocks[pos:pos]=audit
+        pos=next(i for i,b in enumerate(blocks) if b==('h','6. La réponse au défi'))-1
+        context=[('page',None),('p','Résultats — apport communal et fermetures documentées'),
+            ('p','Les tables communales fournissent un complément descriptif pour localiser des observations de 2023–2024. Les 30 communes du Centre-Est et les 27 de l’Est disposent de données sur écoles, salles, élèves, enseignants et fermetures pour insécurité, séparées entre public, privé et ensemble.'),
+            ('p','Une qualification par commune et indicateur distingue la cohérence locale, la somme des communes de sa province et la somme des provinces de sa région. Une incohérence régionale n’est pas assimilée à une erreur de chacune des communes.'),
+            ('table',[['Contrôles des annuaires','Centre-Est','Est'],['Conformes','288','334'],['Alertes','0','21'],['Non vérifiables','2','0']]),
+            ('p','Exemple à ne pas corriger silencieusement : les communes de la Kompienga totalisent 62 écoles publiques et deux privées fermées, soit 64, contre 36 dans le récapitulatif provincial (annuaire Est, PDF p. 127 et 129). Les valeurs contradictoires ont été confirmées sur les images du PDF et restent signalées dans les données.'),
+            ('p','Les fermetures sont un contexte historique, sans date exacte de constat ni définition stock/flux établie ici. Elles ne sont ni ajoutées aux élèves ni retranchées automatiquement des écoles. Aucun taux de fermeture ni statut actuel de sécurité ou d’accessibilité n’en est déduit.'),
+            ('p','Ces sources montrent pourquoi une affectation ne doit pas reposer sur les seuls ratios. Elles n’alimentent pas automatiquement les allocations ni les scénarios 2030. La liste des communes et les contrôles sont livrés pour un examen local ; la confirmation des sites, des personnels et des conditions d’accueil demeure une étape de mise en œuvre.'),
+            ('p','Sources : INSD, annuaires statistiques régionaux 2024 du Centre-Est et de l’Est, éditions décembre 2025, tableaux 02.04.008–044 (Centre-Est) et 02.04.008–060 (Est), périodes explicites 2023–2024. ODFA, quatre séries extraites le 14 novembre 2026 ; dernières observations au libellé 2024. Les URL, PDF et réponses originales retenues sont fournis dans les archives de collecte.')]
+        blocks[pos:pos]=context
+        replacements={
+            'Extraire les six ZIP dans un même dossier':'Extraire les sept ZIP dans un même dossier',
+            'python code/11_preparer_livraison.py --equipe EXX --sortie livraison_v1':'python code/11_preparer_livraison.py --equipe EXX --version 2 --sortie livraison_v2',
+            'Les prolongements utiles sont une collecte communale comparable,':'Les prolongements utiles sont l’extension des données communales comparables à tout le territoire,',
+        }
+        for i,(kind,value) in enumerate(blocks):
+            if kind=='p':
+                for old,new in replacements.items():value=value.replace(old,new)
+                blocks[i]=(kind,value)
+        i=next(i for i,b in enumerate(blocks) if b[0]=='p' and b[1].startswith('Le script 08'))
+        blocks.insert(i,('p','Compléments : installer Poppler (pdftotext), puis lancer python code/12_verifier_complements.py. Cette commande régénère les tables et rapprochements localement, sans API ni clé, après extraction de la seconde archive de collecte. Les données complémentaires restent distinctes du simulateur. Les archives contiennent les sources et scripts nécessaires à cette sélection, sans le catalogue ODFA global ni les fichiers individuels d’enquête.'))
     return blocks
 
 
-def generer_rapport(root, equipe='EXX'):
-    """Même contenu pour Markdown et PDF ; pagination contrôlée à neuf pages."""
+def generer_rapport(root, equipe='EXX',version=1):
+    """Même contenu pour Markdown et PDF ; pagination contrôlée à quinze pages au plus."""
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, KeepTogether
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib import colors
@@ -146,18 +185,25 @@ def generer_rapport(root, equipe='EXX'):
         if name not in pdfmetrics.getRegisteredFontNames(): pdfmetrics.registerFont(TTFont(name,str(font/file)))
     pdfmetrics.registerFontFamily('DejaVu',normal='DejaVu',bold='DejaVuBold')
     docs=root/'documentation'; docs.mkdir(exist_ok=True)
-    md=docs/f'{equipe}_documentation_D3_rapport_v1.md'; pdf=md.with_suffix('.pdf')
+    md=docs/f'{equipe}_documentation_D3_rapport_v{version}.md'; pdf=md.with_suffix('.pdf')
     styles=getSampleStyleSheet()
     body=ParagraphStyle('Corps',fontName='DejaVu',fontSize=9.7,leading=14.2,spaceAfter=11,textColor=colors.HexColor('#22313b'))
     heading=ParagraphStyle('Partie',parent=body,fontName='DejaVuBold',fontSize=20,leading=25,spaceAfter=23,textColor=colors.HexColor('#12334b'))
     cell=ParagraphStyle('Cellule',parent=body,fontSize=8,leading=11,spaceAfter=0)
     caption=ParagraphStyle('Legende',parent=body,fontSize=8,leading=11,spaceAfter=12)
     story=[]; markdown=['# Répartir les maîtres et les salles du primaire public\n']
-    for kind,value in contenu(root):
+    for kind,value in contenu(root,version=version):
         if kind=='page': story.append(PageBreak()); continue
         if kind in ('p','h'):
             story.append(Paragraph(escape(value),heading if kind=='h' else body))
             markdown.append(('## ' if kind=='h' else '')+value+'\n')
+        elif kind=='kpis':
+            large=ParagraphStyle('ChiffreCle',parent=body,fontName='DejaVuBold',fontSize=22,leading=28,textColor=colors.HexColor('#176650'))
+            rows=[[Paragraph(escape(str(c[j])),large if j==1 else caption) for c in value] for j in range(3)]
+            t=Table(rows,colWidths=[480/len(value)]*len(value),hAlign='LEFT')
+            t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),colors.HexColor('#edf4ef')),('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),10),('RIGHTPADDING',(0,0),(-1,-1),10),('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7)]))
+            story.extend([t,Spacer(1,14)])
+            markdown.extend(f'**{c[1]}** — {c[0]} ({c[2]})\n' for c in value)
         elif kind=='table':
             rows=[[Paragraph(escape(str(c)),cell) for c in row] for row in value]
             widths=[480/len(value[0])]*len(value[0])
@@ -175,7 +221,7 @@ def generer_rapport(root, equipe='EXX'):
     md.write_text('\n'.join(markdown),encoding='utf-8')
     def footer(canvas,doc):
         canvas.saveState(); canvas.setFont('DejaVu',8);canvas.setFillColor(colors.HexColor('#647680'))
-        canvas.drawString(55,30,'Défi 3 · Primaire public · Rapport V1');canvas.drawRightString(535,30,str(doc.page));canvas.restoreState()
+        canvas.drawString(55,30,f'Défi 3 · Primaire public · Rapport V{version}');canvas.drawRightString(535,30,str(doc.page));canvas.restoreState()
     doc=SimpleDocTemplate(str(pdf),pagesize=(595.28,841.89),rightMargin=55,leftMargin=55,topMargin=48,bottomMargin=48,title='Répartition provinciale des maîtres et salles — Défi 3',author='',creator='Générateur du rapport D3',subject='Simulation du primaire public')
     doc.build(story,onFirstPage=footer,onLaterPages=footer)
     return md,pdf

@@ -1,4 +1,4 @@
-"""Construit les neuf fichiers déposables et leur manifeste voisin, sans upload.
+"""Construit la livraison et son manifeste, sans upload (V1 : neuf fichiers ; V2 : dix).
 
 Usage : python code/11_preparer_livraison.py --equipe E07 --sortie livraison_v1
 Les sources originales sont copiées sans modification ; les produits EXX sont adaptés.
@@ -43,6 +43,7 @@ def chemin_autorise(name):
 
 def verifier_archive(path):
     with zipfile.ZipFile(path) as z:
+        if len(z.namelist())!=len(set(z.namelist())):raise ValueError('Noms dupliqués dans l’archive')
         for name in z.namelist():
             if not chemin_autorise(name): raise ValueError(f'Chemin interdit : {name}')
         if z.testzip() is not None: raise ValueError(f'Archive corrompue : {path.name}')
@@ -86,67 +87,106 @@ def sources_minimales(root):
     return files
 
 
-def construire(root=RACINE,equipe='EXX',sortie='livraison_v1'):
+def version_fichier_autorisee(path,version):
+    m=re.search(r'_v(\d+)\.',Path(path).name,re.IGNORECASE)
+    return m is None or int(m[1])<=version
+
+
+def produits_etape(dossier,version):
+    files=[]
+    for f in sorted(Path(dossier).glob('*')):
+        if f.is_file() and f.suffix in TEXTES|{'.png'} and version_fichier_autorisee(f,version):files.append(f)
+    return files
+
+
+def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1):
     from pypdf import PdfReader
+    if type(version) is not int or version not in (1,2,3):raise ValueError('version attendue : 1, 2 ou 3')
     equipe=valider_equipe(equipe); root=Path(root)
     output=Path(sortie); output=output if output.is_absolute() else root/output
+    if (output/'MANIFESTE.json').exists() and json.loads((output/'MANIFESTE.json').read_text()).get('version')!=version:
+        raise ValueError('La version du dossier existant est différente ; utiliser un autre dossier de sortie.')
     output.mkdir(parents=True,exist_ok=True)
+    complement=None
+    if version==3:
+        from controle_humain import preparer
+        preparer(root)
+    if version>=2:
+        from complements_livraison import preparer_synthese, fichiers_complements
+        preparer_synthese(root);complement=fichiers_complements(root)
     # Dossier dédié seulement : ne jamais supprimer silencieusement un autre travail.
-    attendus={f'{equipe}_{etape}_D3_{role}_donnees_v1.zip' for _,etape,role in ETAPES}
-    attendus|={f'{equipe}_documentation_D3_code_v1.zip',f'{equipe}_documentation_D3_rapport_v1.pdf',f'{equipe}_documentation_D3_notice_v1.md',f'{equipe}_documentation_D3_usage-IA_v1.md','MANIFESTE.json'}
+    attendus={f'{equipe}_{etape}_D3_{role}_donnees_v{version}.zip' for _,etape,role in ETAPES}
+    attendus|={f'{equipe}_documentation_D3_code_v{version}.zip',f'{equipe}_documentation_D3_rapport_v{version}.pdf',f'{equipe}_documentation_D3_notice_v{version}.md',f'{equipe}_documentation_D3_usage-IA_v{version}.md','MANIFESTE.json'}
+    if version>=2:attendus.add(f'{equipe}_01-collecte_D3_engineer_sources-complementaires_v{version}.zip')
     inconnus={p.name for p in output.iterdir()}-attendus
     if inconnus: raise ValueError(f'Le dossier de sortie contient des fichiers étrangers : {sorted(inconnus)}')
-    md,pdf=generer_rapport(root,equipe)
+    md,pdf=generer_rapport(root,equipe,version=version)
     pages=len(PdfReader(pdf).pages)
     records=[]
     def record(path,cat): records.append({'path':path.name,'category':cat})
     for dossier,etape,role in ETAPES:
-        path=output/f'{equipe}_{etape}_D3_{role}_donnees_v1.zip'
+        path=output/f'{equipe}_{etape}_D3_{role}_donnees_v{version}.zip'
         with zipfile.ZipFile(path,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
-            for f in sorted((root/dossier).glob('*')):
-                if f.is_file() and f.suffix in TEXTES|{'.png'}: ajouter(z,f,root,equipe)
+            for f in produits_etape(root/dossier,version):ajouter(z,f,root,equipe)
+            if complement:
+                for f in complement[dossier]:
+                    if f.parent!=root/dossier:ajouter(z,f,root,equipe)
             if dossier=='01_collecte':
                 for f in sorted((root/'00_sources').iterdir()):
                     if f.is_file() and f.suffix in {'.pdf','.xlsx'}: ajouter(z,f,root,equipe,original=True)
                 for f in sources_minimales(root): ajouter(z,f,root,equipe,original=True)
                 ajouter(z,root/'01_collecte/limites_administratives/bfa_admin2.geojson',root,equipe,original=True)
-            notice_archive(z,dossier,f'# Étape {etape}\n\nExtraire à la racine commune aux six archives. Les chemins recréent {dossier}/ sans dossier redondant.\nLes produits et leurs traces sont fournis ici. La collecte fournit les sources minimales originales au chemin attendu.\nReproduction : python code/00_tout_relancer.py ; voir LISEZ-MOI.md à la racine de l’archive code.\n')
+            notice_archive(z,dossier,f'# Étape {etape}\n\nExtraire à la racine commune aux {7 if version>=2 else 6} archives. Les chemins recréent {dossier}/ sans dossier redondant.\nLes produits et leurs traces sont fournis ici. La collecte fournit les sources minimales originales au chemin attendu.\nReproduction : python code/00_tout_relancer.py ; voir LISEZ-MOI.md à la racine de l’archive code.\n')
         verifier_archive(path);record(path,f'donnees_{etape}')
-    code=output/f'{equipe}_documentation_D3_code_v1.zip'
+    if complement:
+        supp=output/f'{equipe}_01-collecte_D3_engineer_sources-complementaires_v{version}.zip'
+        with zipfile.ZipFile(supp,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
+            for f in complement['sources']:ajouter(z,f,root,equipe,original=True)
+            notice_archive(z,'01_collecte/complements_web','Sources complémentaires : trois PDF régionaux et quatre réponses ODFA. Extraire avec les six autres ZIP à une même racine ; reproduction sans API : python code/12_verifier_complements.py. Les PDF et JSON originaux sont conservés ; les HTML, le catalogue global et les microdonnées individuelles sont exclus. Les autres sources mentionnées dans les registres de recherche ne sont pas nécessaires à cette sélection.\n')
+        verifier_archive(supp);record(supp,'donnees_01-collecte')
+    code=output/f'{equipe}_documentation_D3_code_v{version}.zip'
     with zipfile.ZipFile(code,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
         for dossier in ['code','tests','tableau_de_bord']:
             for f in sorted((root/dossier).rglob('*')):
                 if f.is_file() and chemin_autorise(f.relative_to(root).as_posix()): ajouter(z,f,root,equipe)
+        if complement:
+            for f in complement['code']:ajouter(z,f,root,equipe)
         for f in [root/'LISEZ-MOI.md',root/'JOURNAL_IA.md',root/'CHANGELOG.md',*sorted(root.glob('requirements*.txt'))]: ajouter(z,f,root,equipe)
         for f in sorted((root/'documentation').rglob('*')):
             rel=f.relative_to(root).as_posix()
-            if f.is_file() and chemin_autorise(rel) and f.suffix in {'.md','.csv','.json'} and not f.name.startswith(('CONTRAT_','EXX_documentation_D3_rapport')):
-                if f.name.endswith('_rapport_v1.md') and f!=md: continue
+            if f.is_file() and chemin_autorise(rel) and version_fichier_autorisee(f,version) and f.suffix in {'.md','.csv','.json'} and not f.name.startswith(('CONTRAT_','EXX_documentation_D3_rapport')):
+                if re.search(r'_documentation_D3_rapport_v\d+\.md$',f.name):continue
                 ajouter(z,f,root,equipe)
         # La version courante du rapport est toujours présente, y compris code EXX.
-        if md.name.startswith('EXX_'): ajouter(z,md,root,equipe)
+        ajouter(z,md,root,equipe)
         z.writestr('DECLARATION_IA.md','# Déclaration d’usage de l’IA\n\n'+DECLARATION_IA+'\n')
     verifier_archive(code);record(code,'code')
     pdf_copie=output/pdf.name; shutil.copyfile(pdf,pdf_copie);record(pdf_copie,'rapport_pdf')
-    usage=output/f'{equipe}_documentation_D3_usage-IA_v1.md'
+    usage=output/f'{equipe}_documentation_D3_usage-IA_v{version}.md'
     usage.write_text('# Usage de l’intelligence artificielle\n\n'+DECLARATION_IA+'\n\nLe journal détaillé figure dans l’archive code. Les sources originales ne sont pas modifiées.\n',encoding='utf-8');record(usage,'usage_ia')
-    notice=output/f'{equipe}_documentation_D3_notice_v1.md';record(notice,'notice')
+    notice=output/f'{equipe}_documentation_D3_notice_v{version}.md';record(notice,'notice')
     # Les tailles figurent dans la notice ; sa taille propre converge en quelques passes.
     notice.write_text('',encoding='utf-8')
     for _ in range(6):
         tableau='\n'.join(f'| {r["path"]} | {r["category"]} | {(output/r["path"]).stat().st_size} |' for r in records)
-        value=f'''# Notice de livraison — Défi 3 V1
+        value=f'''# Notice de livraison — Défi 3 V{version}
 
-Neuf fichiers à déposer ; MANIFESTE.json est un contrôle voisin, à ne pas déposer.
+Pour consulter sans installation : extraire les sept ZIP V2/V3 (six en V1) dans un même dossier, puis ouvrir tableau_de_bord/index.html. Aucun Python ni réseau n’est requis pour utiliser l’interface fournie.
+
+{10 if version>=2 else 9} fichiers à déposer ; MANIFESTE.json est un contrôle voisin, à ne pas déposer.
 
 | Fichier | Catégorie | Octets |
 | --- | --- | ---: |
 {tableau}
 
 Rapport : {pages} pages. Chaque fichier < 50 000 000 octets ; total < 500 000 000.
-Extraire les six ZIP ensemble. Installer `python -m pip install -r requirements.txt`, puis lancer `python code/00_tout_relancer.py`. Ouvrir `tableau_de_bord/index.html` hors ligne.
+Extraire les {7 if version>=2 else 6} ZIP ensemble. Installer `python -m pip install -r requirements.txt`, puis lancer `python code/00_tout_relancer.py`. Ouvrir `tableau_de_bord/index.html` hors ligne.
 Tests : `python -m unittest discover -s tests -v` ; `node tests/test_moteur.js`.
+{'Compléments : python code/12_verifier_complements.py ; nécessite Poppler (pdftotext), sans API. Les nouvelles sources restent hors du simulateur.' if version>=2 else ''}
 Audit 09 facultatif : exige le Data Pack complet original, absent de cette livraison minimale. Le script 08 utilise le PDF ESU fourni.
+
+Versions : V{version} désigne le rapport et les archives. Les noms internes _v1 identifient les calculs et tables restés inchangés ; les sources originales gardent leurs noms.
+{'Contrôle humain : fiche de 20 lignes à remplir dans documentation/FICHE_CONTROLE_HUMAIN_v3.csv ; aucun contrôle de ces lignes n’est encore déclaré réalisé.' if version==3 else ''}
 
 Déclaration IA : {DECLARATION_IA}
 '''
@@ -154,12 +194,12 @@ Déclaration IA : {DECLARATION_IA}
         if notice.stat().st_size==previous: break
     for r in records:
         p=output/r['path'];r['size']=p.stat().st_size;r['sha256']=hashlib.sha256(p.read_bytes()).hexdigest()
-    if len(records)!=9: raise ValueError('Neuf fichiers déposables attendus.')
+    if len(records)!=(10 if version>=2 else 9): raise ValueError('Nombre de fichiers déposables inattendu.')
     valider_limites([r['size'] for r in records],pages)
     metadata=PdfReader(pdf).metadata
     if metadata.author: raise ValueError('Auteur PDF non vide.')
     if not 20<=len(DECLARATION_IA)<=2000: raise ValueError('Déclaration IA hors limites.')
-    manifeste={'version':1,'equipe':equipe,'rapport_pages':pages,'total_bytes':sum(r['size'] for r in records),'fichiers_a_deposer':records,'manifest_non_deposable':True}
+    manifeste={'version':version,'equipe':equipe,'rapport_pages':pages,'total_bytes':sum(r['size'] for r in records),'fichiers_a_deposer':records,'manifest_non_deposable':True}
     (output/'MANIFESTE.json').write_text(json.dumps(manifeste,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print(json.dumps({'dossier':output.name,'fichiers':len(records),'pages':pages,'octets':manifeste['total_bytes']},ensure_ascii=False))
     return manifeste
@@ -168,6 +208,7 @@ Déclaration IA : {DECLARATION_IA}
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--equipe',default='EXX');parser.add_argument('--sortie',default='livraison_v1')
-    args=parser.parse_args(); construire(equipe=args.equipe,sortie=args.sortie)
+    parser.add_argument('--version',type=int,choices=[1,2,3],default=1)
+    args=parser.parse_args(); construire(equipe=args.equipe,sortie=args.sortie,version=args.version)
 
 if __name__=='__main__': main()

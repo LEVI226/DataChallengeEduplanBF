@@ -22,7 +22,7 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-Les équipes disposant des ressources du concours doivent restaurer les sources minimales dans leurs chemins d'origine. Les six archives de livraison, disponibles séparément dans l'espace de travail de l'équipe, s'extraient dans un même dossier et recréent ces chemins. Les entrées attendues sont précisées dans les scripts et dans le tableau ci-dessous.
+Les équipes disposant des ressources du concours doivent restaurer les sources minimales dans leurs chemins d'origine. Les sept archives de livraison V3, disponibles séparément dans l'espace de travail de l'équipe, s'extraient dans un même dossier et recréent ces chemins. Les entrées attendues sont précisées dans les scripts et dans le tableau ci-dessous.
 
 | Entrées | Utilisation |
 |---|---|
@@ -54,3 +54,16 @@ Certains contrôles nécessitent les sources ou résultats locaux exclus du dép
 Le seuil de 50 élèves par maître ou par salle est un paramètre de simulation. Les scénarios 2030 sont conditionnels et ne sont pas des intervalles de confiance. Les allocations comparent plusieurs critères ; les données agrégées ne suffisent pas à garantir l'accessibilité opérationnelle d'une école.
 
 Les fichiers de concours restent anonymisés avec `EXX` tant que le code anonyme attribué par la plateforme n'est pas connu. Le nom du compte GitHub ne doit pas être repris dans les fichiers soumis au jury.
+
+## Dernière version de livraison
+
+La V3 comprend un rapport de neuf pages et quatre figures, un résumé visuel dès la première page, les audits condensés et une fiche de vingt lignes à vérifier par l’équipe. Le rapport et les fichiers de données restent hors du dépôt public. Les sorties de calcul `_v1` désignent des résultats inchangés ; les conteneurs et le rapport sont versionnés V3.
+
+Les scripts complémentaires de `01_collecte/complements_web`, `01_collecte/complements_insd_20261114` et `01_collecte/rapprochement_20261114` sont publiés sans leurs PDF, JSON, registres ni CSV. Ils s’exécutent avec les entrées autorisées de la livraison privée :
+
+```sh
+python code/12_verifier_complements.py
+python code/11_preparer_livraison.py --equipe EXX --version 3 --sortie livraison_v3
+```
+
+La reproduction des compléments demande Poppler (`pdftotext`). La fiche de contrôle humain reste à remplir ; sa préparation ne constitue pas une vérification humaine.
