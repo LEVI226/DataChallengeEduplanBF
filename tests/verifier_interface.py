@@ -20,6 +20,31 @@ def verifier():
         page.on('console', lambda message: errors.append(message.text) if message.type == 'error' else None)
         page.goto(url)
         assert page.locator('#lignes tr').count() == 45
+        assert page.locator('#comparaison tr').count() == 4
+        assert page.locator('#demo-table tr').count() == 45
+        assert '76,4' in page.locator('#demo-resume').inner_text()
+        assert '5\u202f061' in page.locator('#courbe-table').inner_text()
+        demo_avant = page.locator('#demo-table').inner_text()
+        page.locator('#regle').select_option('franchissement')
+        assert '1\u202f856' in page.locator('#franchissement-detail').inner_text()
+        assert '144' in page.locator('#franchissement-detail').inner_text()
+        assert '64,4' in page.locator('#kpis').inner_text()
+        with page.expect_download() as info:
+            page.locator('#export').click()
+        phase_rows = list(csv.DictReader(io.StringIO(Path(info.value.path()).read_text(encoding='utf-8-sig')), delimiter=';'))
+        assert sum(int(r['maitres_ajout_seuil']) for r in phase_rows) == 1856
+        assert sum(int(r['maitres_ajout_reliquat']) for r in phase_rows) == 144
+        with page.expect_download() as info:
+            page.locator('#export-demographie').click()
+        demo_rows = list(csv.DictReader(io.StringIO(Path(info.value.path()).read_text(encoding='utf-8-sig')), delimiter=';'))
+        assert len(demo_rows) == 45 and sum(int(r['eleves_total']) for r in demo_rows) == 3308096
+        assert 'pas un taux net' in demo_rows[0]['interpretation']
+        page.locator('#seuil-maitres').fill('43.8')
+        page.locator('#budget-maitres').fill('9')
+        assert '1 provinces ramenées' in page.locator('#franchissement-detail').inner_text()
+        assert '9 unités' in page.locator('#franchissement-detail').inner_text()
+        page.locator('#seuil-maitres').fill('50')
+        page.locator('#budget-maitres').fill('2000')
         assert 'Sélectionnez un territoire' in page.locator('#detail').inner_text(), 'La simulation initiale valide doit inviter à sélectionner une province'
         # fill émet input, sans blur/change : aucune ancienne simulation ne doit rester exportable.
         page.locator('#budget-maitres').fill('-1')
@@ -42,6 +67,7 @@ def verifier():
         assert 'annee_stocks' in rows[0], 'Le CSV doit préciser l’année des stocks observés'
         assert {row['annee_stocks'] for row in rows} == {'2024-2025'}
         page.locator('#scenario').select_option('demographie_insd')
+        assert page.locator('#demo-table').inner_text() == demo_avant
         hypothesis = page.locator('#hypothese').inner_text()
         assert 'Années civiles 2025/2030' in hypothesis and 'stocks de maîtres et de salles conservés' in hypothesis
         page.locator('#region').select_option('')

@@ -1,8 +1,8 @@
 """Présentation V3 pour le jury : résumé visuel, arbitrage et limites regroupées."""
 from pathlib import Path
-from rapport_livraison import lire,fmt,DECLARATION_IA
+from rapport_livraison import lire,fmt,DECLARATION_IA,declaration_ia
 
-def contenu_jury(root,base):
+def contenu_jury(root,base,version=3):
     pages=[[]]
     for kind,value in base:
         if kind=='page':pages.append([])
@@ -73,6 +73,18 @@ def contenu_jury(root,base):
     last.insert(idx,('p','Reproduire les compléments : installer Poppler (pdftotext), puis lancer python code/12_verifier_complements.py, sans API. La notice distingue la version V3 de la livraison et les sorties de calcul _v1 inchangées. Les dépendances épinglées ont été testées sur macOS avec Python 3.14.7 ; Windows et Linux n’ont pas été testés.'))
     last.insert(idx+1,('p','Compléments : INSD, annuaires régionaux 2024 Centre-Est et Est, éditions décembre 2025, observations 2023–2024 ; ODFA, séries extraites le 14 novembre 2026 ; CNS529, tableau IV.1.3, PDF p. 206–212 pour tous les enseignants. Registres et CSV livrés conservent URL, périodes et pages.'))
     pages[8]=last
+    if version==4:
+        for i,page in enumerate(pages):
+            for j,(kind,value) in enumerate(page):
+                if kind=='p':
+                    value=value.replace('Rapport V3','Rapport V4').replace('version V3','version V4').replace('--version 3 --sortie livraison_v3','--version 4 --sortie livraison_v4').replace('Remplacer EXX uniquement par le code anonyme attribué.','EXX est un préfixe anonyme choisi ; aucun code officiel n’est affiché dans l’espace d’équipe.')
+                    if value==DECLARATION_IA:value=declaration_ia(root,4)
+                    if value.startswith('Le script 08'):
+                        value='Audit PDF ESU : python code/08_verifier_pdf_esu.py. Le script 09 audite le Data Pack complet et exige ce pack original, hors livraison minimale. Les preuves déjà produites restent consultables.'
+                    value=value.replace('La fiche de contrôle humain fournie doit être remplie avant toute déclaration de vérification humaine de ces lignes.','Un participant (rôles Data Engineer / Data Architect) a communiqué ses lectures de vingt lignes des PDF DGESS ; l’assistant les a comparées aux tables : cent valeurs concordantes, fiche du 14 novembre 2026. Ce contrôle ciblé ne vaut pas validation exhaustive ni vérification de terrain.')
+                    pages[i][j]=(kind,value)
+                elif kind=='table':
+                    pages[i][j]=(kind,[[str(cell).replace('Usages déclarés ; contrôle humain de lignes sources encore à effectuer','Usages déclarés ; lecture de vingt lignes par un participant et comparaison assistée, contrôle ciblé') for cell in row] for row in value])
     out=[]
     for i,page in enumerate(pages):
         if i:out.append(('page',None))

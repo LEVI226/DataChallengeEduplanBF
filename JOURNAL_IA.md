@@ -1,5 +1,11 @@
 # Journal d'usage de l'intelligence artificielle
 
+## 2026-11-14 — Extension V5 assistée
+GLM a fourni une maquette à données illustratives et des pistes méthodologiques ; aucune de ses données n'est utilisée dans le modèle. Ses formules et propositions ont été relues. Une relecture Claude a proposé une lecture démographique et un objectif de franchissement. Codex a recalculé ces éléments sur les tables réelles et corrigé l'affirmation laissant le Loroum à 112,3 : il reçoit 161 postes dans l'étape de franchissement.
+
+Codex a écrit le moteur complémentaire, les tests, l'interface, les exports et les compléments du rapport. L'équipe a demandé cette extension ; aucun contrôle humain supplémentaire n'est inventé. La lecture de vingt lignes précédemment communiquée et sa comparaison assistée restent documentées dans la fiche V4. La clarification des organisateurs sur l'IA à la préparation reste nécessaire. Aucune publication ni transmission externe effectuée par ces scripts.
+
+
 Ce journal sert à trois choses :
 
 1. remplir la **déclaration d'usage de l'IA**, obligatoire au dépôt (20 à 2 000 caractères) ;
@@ -149,3 +155,13 @@ L’utilisateur a demandé de poursuivre le rapprochement des sources et l’ext
 L’utilisateur a transmis une relecture indépendante et demandé de poursuivre la préparation. L’assistant a vérifié le générateur, restructuré le rapport en neuf pages avec trois chiffres et carte avant/après dès la page 1, condensé les audits et regroupé les limites. L’utilisateur a confirmé qu’aucune comparaison humaine de lignes sources n’était encore réalisée et demandé une fiche : vingt lignes de référence couvrant les treize régions, toutes NON_VERIFIE, ont été préparées. Aucune validation humaine n’est déclarée. Les versions internes _v1 restent celles des calculs inchangés ; V3 désigne les conteneurs et le rapport. La notice commence par l’ouverture hors ligne sans Python. Un défaut de message initial de l’interface a été reproduit par un test navigateur puis corrigé sans modifier les calculs. Tests : 31 Python, moteur JavaScript et parcours navigateur avec surveillance des requêtes réseau. Revue indépendante assistée : filtrage de la documentation des versions futures corrigé et testé. Versions précédentes préservées ; aucun envoi ni contact avec les organisateurs.
 
 Vérification finale V3 : sept ZIP extraits dans un dossier vide, dépendances installées dans un environnement virtuel neuf. Chaîne, compléments, audit ESU, 31 tests Python, moteur JavaScript et test navigateur réussis ; 38 CSV identiques par SHA-256. Pages 1, 8 et 9 inspectées visuellement par l’assistant ; neuf pages et quatre figures. Contrôle humain toujours non réalisé, comme confirmé par l’utilisateur. Archives V1/V2 intactes. Preuves : documentation/VERIFICATION_LIVRAISON_V3.md.
+
+
+## 2026-11-14 — Contrôle de vingt lignes rapporté par un participant
+Le participant, identifié uniquement par ses rôles déclarés Data Engineer / Data Architect, a communiqué dans le chat ses lectures du tableau I.1 des annuaires CNS530 2024-2025 (seize lignes publiques) et CNS529 2023-2024 (quatre lignes, public/privé/total). L’assistant a comparé ces transcriptions aux cinq champs attendus de chaque ligne et consigné les résultats dans documentation/FICHE_CONTROLE_HUMAIN_v3.csv : vingt lignes conformes, cent comparaisons concordantes, aucun écart. Les groupes pédagogiques ont été distingués des maîtres chargés de cours. Ce relevé est une vérification rapportée par ce participant ; il ne prouve pas un contrôle par deux personnes, une validation exhaustive ou une vérification de terrain. Les archives V3 déjà assemblées restent un instantané antérieur, avec fiche non remplie ; aucune reconstruction ni modification du rapport ou de la déclaration IA n’a été effectuée à cette étape.
+
+
+## 2026-11-14 — Préparation V4 après lectures du participant
+Le participant a confirmé qu’aucun code officiel n’est affiché dans l’espace d’équipe. EXX est donc conservé comme préfixe anonyme choisi, sans le présenter comme attribué. La V4 intègre la fiche renseignée (lecture du PDF transmise par le participant, comparaison aux tables par l’assistant, vingt lignes et cent valeurs concordantes). Le rapport et la déclaration IA distinguent explicitement ces rôles ; aucun contrôle indépendant par deux personnes, audit exhaustif ou contrôle de terrain n’est revendiqué. Les sources et calculs sont inchangés ; les trois livraisons précédentes restent conservées. La clarification de l’usage d’IA auprès des organisateurs reste nécessaire. Aucun dépôt plateforme ni push demandé pour cette étape.
+
+Vérification technique V4 : extraction des sept ZIP dans un dossier vide et environnement virtuel neuf, chaîne, compléments, audit ESU, 33 tests Python, moteur JavaScript et navigateur réussis. 38 CSV identiques par SHA-256. Rapport neuf pages ; V1/V2/V3 conservées. Preuves dans documentation/VERIFICATION_LIVRAISON_V4.md.

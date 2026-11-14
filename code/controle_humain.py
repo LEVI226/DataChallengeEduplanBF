@@ -48,3 +48,42 @@ Les versions internes _v1 désignent les calculs et données inchangés. V3 dés
     return out
 
 if __name__=='__main__':print(preparer(Path(__file__).resolve().parents[1]).name)
+
+
+def bilan(path):
+    """Compter les contrôles rapportés sans transformer une case vide en preuve."""
+    from datetime import date
+    with Path(path).open(encoding='utf-8-sig',newline='') as f:rows=list(csv.DictReader(f))
+    ids=[r['id_controle'] for r in rows]
+    if len(ids)!=len(set(ids)):raise ValueError('Identifiants de contrôle humain dupliqués')
+    complete=[]
+    for r in rows:
+        if r['statut_controle_humain']!='CONFORME':continue
+        if not all(r.get(k,'').strip() for k in ['constat_pdf_a_remplir','role_verificateur_a_remplir','date_verification_a_remplir']):continue
+        try:date.fromisoformat(r['date_verification_a_remplir'])
+        except ValueError:continue
+        complete.append(r)
+    return {'lignes':len(rows),'conformes_documentees':len(complete),'valeurs_comparees':5*len(complete),'roles':sorted({r['role_verificateur_a_remplir'] for r in complete}),'dates':sorted({r['date_verification_a_remplir'] for r in complete})}
+
+
+def preparer_version4(root):
+    """Créer un instantané des contrôles transmis, sans changer leurs statuts."""
+    import shutil
+    root=Path(root);source=root/'documentation/FICHE_CONTROLE_HUMAIN_v3.csv';out=source.with_name('FICHE_CONTROLE_HUMAIN_v4.csv')
+    if not out.exists():
+        info=bilan(source)
+        if info['lignes']!=20 or info['conformes_documentees']!=20:raise ValueError('La V4 exige les vingt contrôles humains documentés ; aucune validation automatique ajoutée.')
+        shutil.copyfile(source,out)
+    info=bilan(out)
+    if info['lignes']!=20 or info['conformes_documentees']!=20:raise ValueError('La fiche V4 ne contient pas vingt contrôles complets et conformes.')
+    out.with_suffix('.md').write_text('''# Contrôle humain rapporté — V4
+
+Un participant de l’équipe, sous ses rôles déclarés Data Engineer / Data Architect, a communiqué ses lectures du tableau I.1 des annuaires DGESS CNS530 2024-2025 et CNS529 2023-2024 le 14 novembre 2026. Les vingt lignes sont consignées avec province, année, statut, document, page, cinq valeurs et constat transmis.
+
+Résultat de la comparaison assistée des lectures transmises : vingt lignes conformes, cent valeurs concordantes, aucun écart relevé. Seize lignes du primaire public 2024-2025 couvrent treize régions ; quatre lignes supplémentaires concernent 2023-2024 (public, privé, total). Les groupes pédagogiques sont distingués des maîtres chargés de cours.
+
+L’assistant a comparé les transcriptions reçues aux tables et renseigné la fiche à partir des réponses du participant. Il s’agit d’un contrôle humain rapporté par ce participant, pas d’un contrôle indépendant par deux personnes, d’une validation exhaustive des tables ou d’une vérification de terrain. Aucun nom de membre n’est enregistré.
+
+La préparation initiale assistée par IA reste déclarée et sa conformité au règlement demande la position des organisateurs. EXX est un préfixe anonyme choisi ; aucun code officiel n’est affiché dans l’espace d’équipe, d’après le participant.
+''',encoding='utf-8')
+    return info

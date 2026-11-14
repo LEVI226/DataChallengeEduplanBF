@@ -64,6 +64,11 @@ def main():
     if len(ind) != 45:
         raise ValueError("Le tableau de bord attend les 45 provinces")
     data = construire_donnees(ind, besoins, esu, geometries)
+    demo = pd.read_csv(RACINE / '03_transformation' / f'{EQUIPE}_03-transformation_D3_architect_lecture-demographique_v5.csv')
+    if set(demo.province) != set(ind.province) or demo.province.duplicated().any():
+        raise ValueError('Couverture démographique différente des 45 provinces')
+    data['demographie'] = demo.to_dict(orient='records')
+    data['meta']['version'] = '5'
     dossier = RACINE / "tableau_de_bord"
     dossier.mkdir(exist_ok=True)
     serialized = json.dumps(data, ensure_ascii=False, allow_nan=False, separators=(",", ":"))

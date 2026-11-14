@@ -13,6 +13,20 @@ DECLARATION_IA = (
 )
 
 
+def declaration_ia(root,version=1):
+    if version<4:return DECLARATION_IA
+    from controle_humain import bilan
+    info=bilan(Path(root)/'documentation/FICHE_CONTROLE_HUMAIN_v4.csv')
+    if info['conformes_documentees']!=20:raise ValueError('Contrôle humain V4 incomplet')
+    texte = ("Claude et Codex ont aidé à explorer les sources, préparer et nettoyer les données, écrire et exécuter le code, contrôler les calculs et rédiger les livrables. "
+            "L’IA à la préparation s’écarte de la consigne du guide et est déclarée. Vérifications : totaux, publications sources, tests et reproduction des archives. "
+            "Un participant (Data Engineer / Data Architect) a transmis sa lecture de vingt lignes des PDF DGESS. L’assistant a comparé les cent valeurs aux tables : toutes concordent, fiche fournie. "
+            "Ce contrôle ciblé ne vaut pas validation exhaustive ou de terrain. Usages et limites : JOURNAL_IA.md.")
+    if version>=5: texte += ' GLM a fourni des pistes et une maquette illustrative, non utilisée comme source statistique ; ses propositions ont été relues et corrigées.'
+    return texte
+
+
+
 def fmt(x, decimals=0):
     return f'{float(x):,.{decimals}f}'.replace(',', ' ').replace('.', ',')
 
@@ -25,9 +39,12 @@ def lire(root, dossier, fragment):
 
 
 def contenu(root,version=1):
-    if version==3:
+    if version == 5:
+        from rapport_objectifs_v5 import completer
+        return completer(root, contenu(root, version=4))
+    if version in (3,4):
         from rapport_jury import contenu_jury
-        return contenu_jury(root,contenu(root,version=1))
+        return contenu_jury(root,contenu(root,version=1),version=version)
     d = lire(root,'03_transformation','indicateurs-provinces-public')
     d = d[d.annee_scolaire == '2024-2025']
     sens = lire(root,'04_analyse','sensibilite-seuils')

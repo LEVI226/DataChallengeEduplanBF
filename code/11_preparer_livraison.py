@@ -14,7 +14,7 @@ import zipfile
 
 RACINE = Path(__file__).resolve().parents[1]
 if str(RACINE/'code') not in sys.path: sys.path.insert(0,str(RACINE/'code'))
-from rapport_livraison import generer_rapport, DECLARATION_IA
+from rapport_livraison import generer_rapport, DECLARATION_IA, declaration_ia
 
 ETAPES = [('01_collecte','01-collecte','engineer'),('02_nettoyage','02-nettoyage','engineer'),('03_transformation','03-transformation','architect'),('04_analyse','04-analyse','scientist'),('05_interpretation','05-interpretation','analyst')]
 INTERDITS = {'.venv','venv','__pycache__','.DS_Store','.git','node_modules'}
@@ -101,7 +101,7 @@ def produits_etape(dossier,version):
 
 def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1):
     from pypdf import PdfReader
-    if type(version) is not int or version not in (1,2,3):raise ValueError('version attendue : 1, 2 ou 3')
+    if type(version) is not int or version not in (1,2,3,4,5):raise ValueError('version attendue : 1, 2, 3, 4 ou 5')
     equipe=valider_equipe(equipe); root=Path(root)
     output=Path(sortie); output=output if output.is_absolute() else root/output
     if (output/'MANIFESTE.json').exists() and json.loads((output/'MANIFESTE.json').read_text()).get('version')!=version:
@@ -111,6 +111,10 @@ def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1):
     if version==3:
         from controle_humain import preparer
         preparer(root)
+    elif version>=4:
+        from controle_humain import preparer_version4
+        preparer_version4(root)
+    declaration=declaration_ia(root,version)
     if version>=2:
         from complements_livraison import preparer_synthese, fichiers_complements
         preparer_synthese(root);complement=fichiers_complements(root)
@@ -154,16 +158,17 @@ def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1):
         for f in [root/'LISEZ-MOI.md',root/'JOURNAL_IA.md',root/'CHANGELOG.md',*sorted(root.glob('requirements*.txt'))]: ajouter(z,f,root,equipe)
         for f in sorted((root/'documentation').rglob('*')):
             rel=f.relative_to(root).as_posix()
+            if version>=4 and f.name.startswith('FICHE_CONTROLE_HUMAIN_v3.'):continue
             if f.is_file() and chemin_autorise(rel) and version_fichier_autorisee(f,version) and f.suffix in {'.md','.csv','.json'} and not f.name.startswith(('CONTRAT_','EXX_documentation_D3_rapport')):
                 if re.search(r'_documentation_D3_rapport_v\d+\.md$',f.name):continue
                 ajouter(z,f,root,equipe)
         # La version courante du rapport est toujours présente, y compris code EXX.
         ajouter(z,md,root,equipe)
-        z.writestr('DECLARATION_IA.md','# Déclaration d’usage de l’IA\n\n'+DECLARATION_IA+'\n')
+        z.writestr('DECLARATION_IA.md','# Déclaration d’usage de l’IA\n\n'+declaration+'\n')
     verifier_archive(code);record(code,'code')
     pdf_copie=output/pdf.name; shutil.copyfile(pdf,pdf_copie);record(pdf_copie,'rapport_pdf')
     usage=output/f'{equipe}_documentation_D3_usage-IA_v{version}.md'
-    usage.write_text('# Usage de l’intelligence artificielle\n\n'+DECLARATION_IA+'\n\nLe journal détaillé figure dans l’archive code. Les sources originales ne sont pas modifiées.\n',encoding='utf-8');record(usage,'usage_ia')
+    usage.write_text('# Usage de l’intelligence artificielle\n\n'+declaration+'\n\nLe journal détaillé figure dans l’archive code. Les sources originales ne sont pas modifiées.\n',encoding='utf-8');record(usage,'usage_ia')
     notice=output/f'{equipe}_documentation_D3_notice_v{version}.md';record(notice,'notice')
     # Les tailles figurent dans la notice ; sa taille propre converge en quelques passes.
     notice.write_text('',encoding='utf-8')
@@ -171,7 +176,7 @@ def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1):
         tableau='\n'.join(f'| {r["path"]} | {r["category"]} | {(output/r["path"]).stat().st_size} |' for r in records)
         value=f'''# Notice de livraison — Défi 3 V{version}
 
-Pour consulter sans installation : extraire les sept ZIP V2/V3 (six en V1) dans un même dossier, puis ouvrir tableau_de_bord/index.html. Aucun Python ni réseau n’est requis pour utiliser l’interface fournie.
+Pour consulter sans installation : extraire les sept ZIP à partir de V2 (six en V1) dans un même dossier, puis ouvrir tableau_de_bord/index.html. Aucun Python ni réseau n’est requis pour utiliser l’interface fournie.
 
 {10 if version>=2 else 9} fichiers à déposer ; MANIFESTE.json est un contrôle voisin, à ne pas déposer.
 
@@ -185,10 +190,12 @@ Tests : `python -m unittest discover -s tests -v` ; `node tests/test_moteur.js`.
 {'Compléments : python code/12_verifier_complements.py ; nécessite Poppler (pdftotext), sans API. Les nouvelles sources restent hors du simulateur.' if version>=2 else ''}
 Audit 09 facultatif : exige le Data Pack complet original, absent de cette livraison minimale. Le script 08 utilise le PDF ESU fourni.
 
-Versions : V{version} désigne le rapport et les archives. Les noms internes _v1 identifient les calculs et tables restés inchangés ; les sources originales gardent leurs noms.
+Versions : V{version} désigne le rapport et les archives. Les noms internes _v1 identifient les calculs et tables historiques inchangés ; les ajouts V5 portent _v5. Les sources originales gardent leurs noms.
 {'Contrôle humain : fiche de 20 lignes à remplir dans documentation/FICHE_CONTROLE_HUMAIN_v3.csv ; aucun contrôle de ces lignes n’est encore déclaré réalisé.' if version==3 else ''}
 
-Déclaration IA : {DECLARATION_IA}
+{'Contrôle humain : vingt lignes documentées, cent valeurs concordantes ; fiche documentation/FICHE_CONTROLE_HUMAIN_v4.csv. Préfixe EXX anonyme choisi : aucun code officiel affiché dans l’espace d’équipe.' if version>=4 else ''}
+
+Déclaration IA : {declaration}
 '''
         previous=notice.stat().st_size;notice.write_text(value,encoding='utf-8')
         if notice.stat().st_size==previous: break
@@ -198,7 +205,7 @@ Déclaration IA : {DECLARATION_IA}
     valider_limites([r['size'] for r in records],pages)
     metadata=PdfReader(pdf).metadata
     if metadata.author: raise ValueError('Auteur PDF non vide.')
-    if not 20<=len(DECLARATION_IA)<=2000: raise ValueError('Déclaration IA hors limites.')
+    if not 20<=len(declaration)<=2000: raise ValueError('Déclaration IA hors limites.')
     manifeste={'version':version,'equipe':equipe,'rapport_pages':pages,'total_bytes':sum(r['size'] for r in records),'fichiers_a_deposer':records,'manifest_non_deposable':True}
     (output/'MANIFESTE.json').write_text(json.dumps(manifeste,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print(json.dumps({'dossier':output.name,'fichiers':len(records),'pages':pages,'octets':manifeste['total_bytes']},ensure_ascii=False))
@@ -208,7 +215,7 @@ Déclaration IA : {DECLARATION_IA}
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--equipe',default='EXX');parser.add_argument('--sortie',default='livraison_v1')
-    parser.add_argument('--version',type=int,choices=[1,2,3],default=1)
+    parser.add_argument('--version',type=int,choices=[1,2,3,4,5],default=1)
     args=parser.parse_args(); construire(equipe=args.equipe,sortie=args.sortie,version=args.version)
 
 if __name__=='__main__': main()

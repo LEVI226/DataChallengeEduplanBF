@@ -21,7 +21,7 @@ class LivraisonV2Test(unittest.TestCase):
     def test_version_inconnue_refusee_avant_ecriture(self):
         m=self.builder()
         with tempfile.TemporaryDirectory() as td:
-            for version in [0,4,-1,'2',True]:
+            for version in [0,6,-1,'2',True]:
                 with self.assertRaises(ValueError):m.construire(root=Path(td),sortie='output',version=version)
             self.assertFalse((Path(td)/'output').exists())
 

@@ -72,3 +72,11 @@ compacte et n'envoyer aucune source brute volumineuse par défaut.
   encore à compléter pour une mise en œuvre concrète.
 - Reproductibilité : chaîne, journaux, tests et audit ; compléter le dossier
   de distribution et vérifier la relance dans un environnement neuf.
+
+
+## Mise à jour après le contrôle rapporté — V4
+Le participant a confirmé l’absence de code officiel dans l’espace d’équipe. EXX est un préfixe anonyme choisi, pas un code attribué. Vingt lectures de lignes PDF ont été communiquées par un participant aux rôles Data Engineer / Data Architect ; cent valeurs concordent, fiche V4 renseignée. Ce contrôle ciblé ne supprime pas l’écart de séquence sur la préparation initiale assistée par IA. Les anciennes notices décrivent l’état des versions précédentes.
+
+## Extension V5 — 14 novembre 2026
+
+Quatrième objectif : maximiser le nombre de provinces ramenées au seuil, puis égaliser les ratios avec le reliquat. Décomposition et borne du nombre de franchissements conservées dans les tables et exports. Courbe des moyens minimaux et contexte démographique public+privé / population 6–11 ans ajoutés sans modifier les données ou allocations historiques. Le rapport V5 reste dans la limite de quinze pages ; les réserves d'accessibilité, de coûts, d'usage de l'IA et de portée du contrôle humain restent applicables.

@@ -4,8 +4,8 @@
  const $=id=>document.getElementById(id);
  const fmt=(v,d=0)=>Number(v).toLocaleString('fr-FR',{maximumFractionDigits:d,minimumFractionDigits:d});
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const labels={egalisation:'Égalisation des ratios',deficit_d_abord:'Déficit d’abord',proportionnelle:'Proportionnelle aux élèves'};
- const descriptions={egalisation:'Chaque unité va à la province dont le ratio élèves / ressource est le plus élevé, puis les ratios sont recalculés.',deficit_d_abord:'Chaque unité va au plus grand déficit exprimé en unités au seuil choisi. Une fois les déficits couverts, les ratios sont égalisés.',proportionnelle:'Les moyens sont répartis au prorata des élèves, avec arrondi au plus fort reste. En cas d’égalité, l’ordre des provinces dans les données est conservé.'};
+ const labels={egalisation:'Égalisation des ratios',deficit_d_abord:'Déficit d’abord',proportionnelle:'Proportionnelle aux élèves',franchissement:'Maximum de provinces au seuil'};
+ const descriptions={franchissement:'Les plus petits déficits entiers sont comblés en premier pour maximiser le nombre de provinces ramenées au seuil. Le reliquat est ensuite alloué aux ratios les plus élevés ; ce départage ne constitue pas un optimum conjoint des deux objectifs.',egalisation:'Chaque unité va à la province dont le ratio élèves / ressource est le plus élevé, puis les ratios sont recalculés.',deficit_d_abord:'Chaque unité va au plus grand déficit exprimé en unités au seuil choisi. Une fois les déficits couverts, les ratios sont égalisés.',proportionnelle:'Les moyens sont répartis au prorata des élèves, avec arrondi au plus fort reste. En cas d’égalité, l’ordre des provinces dans les données est conservé.'};
  let data, state, selected=null;
  function erreur(e){$('erreur').hidden=false;$('erreur').textContent='Simulation indisponible : '+e.message;}
  function valeur(id,entier){const input=$(id);if(!input.value.trim())throw Error('Complétez tous les paramètres.');const v=Number(input.value);if(!Number.isFinite(v)||(entier&&(!Number.isSafeInteger(v)||v<0||v>100000))||(!entier&&v<=0))throw Error(entier?'Les moyens doivent être des entiers entre 0 et 100 000 unités.':'Les seuils doivent être strictement positifs.');return v;}
@@ -26,14 +26,15 @@
   $('ressource').addEventListener('change',()=>{if(state)afficher();});
   $('region').addEventListener('change',()=>{if(state){carte();tableau();}});
   $('export').addEventListener('click',exporter);
+  afficherDemographie();$('export-demographie').addEventListener('click',exporterDemographie);
   calculer();
  }
  function hypotheseComplete(scenario){return scenario.description+(scenario.id!=='actuel'&&data.meta.hypothese_2030?' '+data.meta.hypothese_2030:'');}
  function dateFr(v){if(!v)return 'date non renseignée';const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v);return m?`${m[3]}/${m[2]}/${m[1]}`:v;}
  function invalider(){
   state=null;$('export').disabled=true;
-  for(const id of ['kpis','comparaison','lignes','perimetre','signal','compte-lignes','regle-description'])$(id).textContent='';
-  $('carte').replaceChildren();$('detail').textContent='Résultats indisponibles tant que les paramètres sont invalides.';
+  for(const id of ['kpis','comparaison','lignes','perimetre','signal','compte-lignes','regle-description','franchissement-detail','courbe-table','courbe-contexte'])$(id).textContent='';
+  $('courbe-moyens').replaceChildren();$('carte').replaceChildren();$('detail').textContent='Résultats indisponibles tant que les paramètres sont invalides.';
  }
  function calculer(){invalider();try{
   const scenario=data.scenarios.find(s=>s.id===$('scenario').value);
@@ -54,6 +55,9 @@
   $('kpis').innerHTML=cards.map(([key,label,d])=>`<div class="kpi"><span class="label">${label}</span><strong>${fmt(apres[key],d)}</strong><span class="before">Avant : ${fmt(avant[key],d)} → Après allocation</span></div>`).join('');
   $('comparaison').innerHTML=DCBEngine.REGLES.map(regle=>{const a=res.regles[regle].apres;return `<tr class="${regle===state.regle?'selected':''}"><td>${labels[regle]}${regle===state.regle?' · sélectionnée':''}</td><td>${fmt(a.deficit_restant)}</td><td>${fmt(a.provinces_au_dessus_norme)}</td><td>${fmt(a.ratio_max,1)}</td><td>${fmt(a.ratio_moyen,1)}</td></tr>`;}).join('');
   $('regle-description').textContent=descriptions[state.regle]+' Les égalités suivent l’ordre d’entrée. Le budget entier est entièrement réparti, même si le seuil est déjà atteint.';
+  const f=DCBEngine.repartirSeuil(state.eleves,res.stock,state.budgets[r],state.seuils[r]);
+  $('franchissement-detail').textContent=state.regle==='franchissement'?`${fmt(f.provinces_ramenees)} provinces ramenées au seuil : ${fmt(f.cout_franchissement)} unités. Reliquat de ${fmt(f.reliquat)} unités réparti par égalisation. ${f.cout_province_supplementaire===null?'Toutes les provinces atteignent le seuil.':`Ramener une province supplémentaire au seuil demanderait au minimum ${fmt(f.cout_province_supplementaire)} unités au total.`}`:'';
+  afficherCourbe(r);
   const m=state.resultats.maitres,s=state.resultats.salles;
   const signal=data.provinces.reduce((v,p,i)=>v+Math.max(0,p.maitres+m.regles[state.regle].ajout[i]-p.salles-s.regles[state.regle].ajout[i]),0);
   $('signal').textContent=`Signal comptable : somme des écarts positifs entre maîtres et salles après allocation = ${fmt(signal)}. Les ressources sont allouées séparément ; cet écart ne permet pas de déduire une situation individuelle de classe ou d’enseignant.`;
@@ -88,12 +92,36 @@
   return absent?'non renseigné':fmt(esu[key]);
  }
  function detail(i){const p=data.provinces[i],m=ratios(i,'maitres'),s=ratios(i,'salles');
-  $('detail').innerHTML=`<p class="eyebrow">${esc(p.region)}</p><h3>${esc(p.province)}</h3><p class="small">${esc(state.scenario.label)} · ${fmt(state.eleves[i])} élèves</p><dl><dt>Maîtres · stock + ajout</dt><dd>${fmt(p.maitres)} + ${fmt(m.ajout)}</dd><dt>Élèves / maître</dt><dd>${fmt(m.avant,1)} → ${fmt(m.apres,1)}</dd><dt>Salles · stock + ajout</dt><dd>${fmt(p.salles)} + ${fmt(s.ajout)}</dd><dt>Élèves / salle</dt><dd>${fmt(s.avant,1)} → ${fmt(s.apres,1)}</dd></dl><hr><h3>Contexte ESU · ${esc(dateFr(data.meta.date_esu))}</h3><dl><dt>Écoles rouvertes</dt><dd>${esuValeur(p.esu,'ecoles_rouvertes')}</dd><dt>Écoles délocalisées</dt><dd>${esuValeur(p.esu,'ecoles_delocalisees')}</dd><dt>Élèves déplacés</dt><dd>${esuValeur(p.esu,'eleves_deplaces')}</dd></dl><p class="small">Public / privé non distingués. Valeur absente : non renseigné. Ce contexte daté ne garantit pas l’accessibilité actuelle.</p>`;
+  $('detail').innerHTML=`<p class="eyebrow">${esc(p.region)}</p><h3>${esc(p.province)}</h3><p class="small">${esc(state.scenario.label)} · ${fmt(state.eleves[i])} élèves</p><dl><dt>Maîtres · stock + ajout</dt><dd>${fmt(p.maitres)} + ${fmt(m.ajout)}</dd><dt>Élèves / maître</dt><dd>${fmt(m.avant,1)} → ${fmt(m.apres,1)}</dd><dt>Salles · stock + ajout</dt><dd>${fmt(p.salles)} + ${fmt(s.ajout)}</dd><dt>Élèves / salle</dt><dd>${fmt(s.avant,1)} → ${fmt(s.apres,1)}</dd></dl><p class="small">Pourquoi ces ajouts ? ${esc(descriptions[state.regle])} Les nombres ci-dessus résultent de ${fmt(state.budgets.maitres)} maîtres et ${fmt(state.budgets.salles)} salles répartis nationalement.</p><hr><h3>Contexte ESU · ${esc(dateFr(data.meta.date_esu))}</h3><dl><dt>Écoles rouvertes</dt><dd>${esuValeur(p.esu,'ecoles_rouvertes')}</dd><dt>Écoles délocalisées</dt><dd>${esuValeur(p.esu,'ecoles_delocalisees')}</dd><dt>Élèves déplacés</dt><dd>${esuValeur(p.esu,'eleves_deplaces')}</dd></dl><p class="small">Public / privé non distingués. Valeur absente : non renseigné. Ce contexte daté ne garantit pas l’accessibilité actuelle.</p>`;
  }
  function exporter(){if(!state){erreur(Error('Recalculez une simulation valide avant l’export.'));return;}
-  const entete=['annee_scolaire','annee_stocks','scenario','hypothese','regle','budget_maitres_unites','budget_salles_unites','seuil_simulation_maitres','seuil_simulation_salles','perimetre','province','region','eleves','maitres_existants','maitres_ajoutes','ratio_maitre_avant','ratio_maitre_apres','salles_existantes','salles_ajoutees','ratio_salle_avant','ratio_salle_apres','date_esu'];
-  const rows=data.provinces.map((p,i)=>{const m=ratios(i,'maitres'),s=ratios(i,'salles');return [state.scenario.id==='actuel'?data.meta.annee:data.meta.horizon,data.meta.annee,state.scenario.id,hypotheseComplete(state.scenario),state.regle,state.budgets.maitres,state.budgets.salles,state.seuils.maitres,state.seuils.salles,'national_45_provinces',p.province,p.region,state.eleves[i],p.maitres,m.ajout,m.avant.toFixed(6),m.apres.toFixed(6),p.salles,s.ajout,s.avant.toFixed(6),s.apres.toFixed(6),data.meta.date_esu];});
+  const entete=['annee_scolaire','annee_stocks','scenario','hypothese','regle','budget_maitres_unites','budget_salles_unites','seuil_simulation_maitres','seuil_simulation_salles','perimetre','province','region','eleves','maitres_existants','maitres_ajoutes','ratio_maitre_avant','ratio_maitre_apres','salles_existantes','salles_ajoutees','ratio_salle_avant','ratio_salle_apres','date_esu','maitres_ajout_seuil','maitres_ajout_reliquat','salles_ajout_seuil','salles_ajout_reliquat'];
+  const phases={};if(state.regle==='franchissement')for(const r of ['maitres','salles'])phases[r]=DCBEngine.repartirSeuil(state.eleves,state.resultats[r].stock,state.budgets[r],state.seuils[r]);
+  const rows=data.provinces.map((p,i)=>{const m=ratios(i,'maitres'),s=ratios(i,'salles');return [state.scenario.id==='actuel'?data.meta.annee:data.meta.horizon,data.meta.annee,state.scenario.id,hypotheseComplete(state.scenario),state.regle,state.budgets.maitres,state.budgets.salles,state.seuils.maitres,state.seuils.salles,'national_45_provinces',p.province,p.region,state.eleves[i],p.maitres,m.ajout,m.avant.toFixed(6),m.apres.toFixed(6),p.salles,s.ajout,s.avant.toFixed(6),s.apres.toFixed(6),data.meta.date_esu,phases.maitres?.ajout_seuil[i]??'',phases.maitres?.ajout_reliquat[i]??'',phases.salles?.ajout_seuil[i]??'',phases.salles?.ajout_reliquat[i]??''];});
   const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const csv='\ufeff'+[entete,...rows].map(row=>row.map(quote).join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=`allocation_45_provinces_${state.scenario.id}_${state.regle}.csv`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }
+ function afficherCourbe(r){
+  const stock=state.resultats[r].stock;
+  const points=Array.from({length:86},(_,i)=>({x:i+35,y:DCBEngine.unitesPlafond(state.eleves,stock,i+35)}));
+  const max=Math.max(1,...points.map(p=>p.y));
+  const x=v=>60+(v-35)/85*660,y=v=>225-v/max*190;
+  $('courbe-contexte').textContent=`${state.scenario.label} · ${r==='maitres'?'maîtres':'salles'} · ensemble des 45 provinces.`;
+  $('courbe-moyens').innerHTML=`<title>Moyens nécessaires, ${esc(state.scenario.label)}, ${r}</title><path d="M60,35 V225 H720" fill="none" stroke="#677b82"/><polyline points="${points.map(p=>`${x(p.x)},${y(p.y)}`).join(' ')}" fill="none" stroke="#176650" stroke-width="3"/><text x="5" y="32">${fmt(max)}</text><text x="30" y="230">0</text><text x="60" y="245">35</text><text x="700" y="245">120</text><text x="230" y="266">Plafond souhaité · élèves / ressource</text>`;
+  $('courbe-table').innerHTML=[50,55,60,70,80,100].map(v=>`<tr><td>${v}</td><td>${fmt(DCBEngine.unitesPlafond(state.eleves,stock,v))}</td></tr>`).join('');
+ }
+ function afficherDemographie(){
+  const rows=data.demographie;
+  if(!Array.isArray(rows)||rows.length!==45)throw Error('Lecture démographique des 45 provinces absente. Relancez la chaîne.');
+  const ratio=100*rows.reduce((v,p)=>v+p.eleves_total,0)/rows.reduce((v,p)=>v+p.population_6_11_2025,0);
+  $('demo-resume').textContent=`Rapport national : ${fmt(ratio,1)} inscrits pour 100 enfants projetés de 6–11 ans. Ce contexte 2024–2025 reste fixe lorsque vous changez les moyens ou le scénario.`;
+  $('demo-table').innerHTML=rows.map(p=>`<tr><td>${esc(p.province)}</td><td>${fmt(p.ratio_charge_public,1)}</td><td>${fmt(p.eleves_total)}</td><td>${fmt(p.population_6_11_2025)}</td><td>${fmt(p.inscrits_pour_100_enfants,1)}</td></tr>`).join('');
+ }
+ function exporterDemographie(){
+  const columns=['province','region','annee_scolaire','annee_population','eleves_public','eleves_prive','eleves_total','maitres_public','ratio_charge_public','population_6_11_2025','inscrits_pour_100_enfants','source_document','source_page','document_2025','page_2025','interpretation'];
+  const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const csv='\ufeff'+[columns,...data.demographie.map(p=>columns.map(c=>p[c]))].map(row=>row.map(quote).join(';')).join('\r\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download='lecture_demographique_2024_2025.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
  try{initialiser();}catch(e){erreur(e);}
 })();

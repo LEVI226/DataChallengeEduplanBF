@@ -22,7 +22,7 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-Les équipes disposant des ressources du concours doivent restaurer les sources minimales dans leurs chemins d'origine. Les sept archives de livraison V3, disponibles séparément dans l'espace de travail de l'équipe, s'extraient dans un même dossier et recréent ces chemins. Les entrées attendues sont précisées dans les scripts et dans le tableau ci-dessous.
+Les équipes disposant des ressources du concours doivent restaurer les sources minimales dans leurs chemins d'origine. Les sept archives de livraison V5, disponibles séparément dans l'espace de travail de l'équipe, s'extraient dans un même dossier et recréent ces chemins. Les entrées attendues sont précisées dans les scripts et dans le tableau ci-dessous.
 
 | Entrées | Utilisation |
 |---|---|
@@ -53,17 +53,18 @@ Certains contrôles nécessitent les sources ou résultats locaux exclus du dép
 
 Le seuil de 50 élèves par maître ou par salle est un paramètre de simulation. Les scénarios 2030 sont conditionnels et ne sont pas des intervalles de confiance. Les allocations comparent plusieurs critères ; les données agrégées ne suffisent pas à garantir l'accessibilité opérationnelle d'une école.
 
-Les fichiers de concours restent anonymisés avec `EXX` tant que le code anonyme attribué par la plateforme n'est pas connu. Le nom du compte GitHub ne doit pas être repris dans les fichiers soumis au jury.
+Les fichiers de concours utilisent `EXX` comme préfixe anonyme choisi ; aucun code officiel n'est affiché selon le participant. Le nom du compte GitHub ne doit pas être repris dans les fichiers soumis au jury.
 
 ## Dernière version de livraison
 
-La V3 comprend un rapport de neuf pages et quatre figures, un résumé visuel dès la première page, les audits condensés et une fiche de vingt lignes à vérifier par l’équipe. Le rapport et les fichiers de données restent hors du dépôt public. Les sorties de calcul `_v1` désignent des résultats inchangés ; les conteneurs et le rapport sont versionnés V3.
+La V5 ajoute un quatrième objectif : maximiser le nombre de provinces ramenées au seuil, puis utiliser le reliquat sur les ratios les plus élevés. Le tri des déficits entiers croissants est exact pour le nombre de franchissements sous les hypothèses décrites ; le départage du reliquat n'est pas revendiqué comme optimum conjoint.
 
-Les scripts complémentaires de `01_collecte/complements_web`, `01_collecte/complements_insd_20261114` et `01_collecte/rapprochement_20261114` sont publiés sans leurs PDF, JSON, registres ni CSV. Ils s’exécutent avec les entrées autorisées de la livraison privée :
+La courbe des moyens affiche les unités minimales nécessaires pour un plafond provincial. Une lecture séparée rapporte les inscriptions public + privé de tous âges à la population projetée de 6–11 ans ; ce n'est pas un taux net de scolarisation et elle ne modifie pas les allocations. Les données historiques `_v1` sont conservées ; les ajouts portent `_v5`.
 
 ```sh
+python code/00_tout_relancer.py
 python code/12_verifier_complements.py
-python code/11_preparer_livraison.py --equipe EXX --version 3 --sortie livraison_v3
+python code/11_preparer_livraison.py --equipe EXX --version 5 --sortie livraison_v5
 ```
 
-La reproduction des compléments demande Poppler (`pdftotext`). La fiche de contrôle humain reste à remplir ; sa préparation ne constitue pas une vérification humaine.
+La chaîne inclut le script 13 avant la génération de l'interface. La fiche V4 conserve les lectures de vingt lignes communiquées par un participant et leur comparaison assistée ; aucun nouveau contrôle humain ou de terrain n'est revendiqué. L'usage initial de l'IA à la préparation reste à clarifier avec les organisateurs. Les données et livraisons privées ne sont pas incluses dans ce dépôt public.

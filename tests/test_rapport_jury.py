@@ -19,4 +19,15 @@ class RapportJuryTest(unittest.TestCase):
   b=contenu(ROOT,version=3);i=next(i for i,x in enumerate(b) if x==('h','7. La reproduction'))
   self.assertIn('sans installation',b[i+1][1])
 
+ def test_v5_quatre_regles_et_demographie(self):
+  from rapport_livraison import contenu
+  blocks=contenu(ROOT,version=5)
+  text=str(blocks)
+  self.assertIn('Franchissement du seuil',text)
+  self.assertIn('1 856',text)
+  self.assertIn('144',text)
+  self.assertIn('76,4',text)
+  self.assertIn('pas un taux net',text)
+  self.assertEqual(sum(k=='h' for k,v in blocks),7)
+
 if __name__=='__main__':unittest.main()

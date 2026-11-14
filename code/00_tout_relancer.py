@@ -10,7 +10,7 @@ import sys
 
 ETAPES = ["01_provinces_tableau_I1.py", "02_regions_series_10_ans.py", "03_indicateurs_provinces.py",
           "04_projection_2030.py", "05_repartition.py", "06_contexte_esu.py", "07_cartes_et_graphiques.py",
-          "10_tableau_de_bord.py"]
+          "13_objectifs_et_demographie.py", "10_tableau_de_bord.py"]
 DOSSIER = Path(__file__).resolve().parent
 
 for etape in ETAPES:

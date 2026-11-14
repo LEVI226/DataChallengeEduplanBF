@@ -1,5 +1,12 @@
 # Journal des changements
 
+## 2026-11-14 — V5 : objectifs de répartition et lecture démographique
+- Quatrième règle : déficits entiers croissants pour maximiser les franchissements ; reliquat égalisé avec deux étapes distinctes dans les exports. La règle n'est pas présentée comme optimum conjoint des deux critères.
+- Ajouts séparés _v5 : comparaison des quatre règles, détail provincial, courbe des moyens et rapport descriptif inscriptions public+privé / population projetée de 6–11 ans. Les tables historiques restent inchangées.
+- Interface hors ligne : quatre règles, courbe, lecture démographique indépendante des scénarios, exports traçables. Rapport et archives V5 distincts des livraisons précédentes.
+- Contrôles par cas manuels, énumération indépendante et concordance Python/JavaScript ; portée et résultats finaux dans la notice de vérification V5.
+
+
 Une entrée par changement notable. La plus récente en haut.
 Pour chaque entrée : la date, ce qui a changé, pourquoi, et le fichier concerné.
 
@@ -12,6 +19,11 @@ Modèle :
 ```
 
 ---
+
+## 2026-11-14 — V4 : lectures ciblées et préfixe anonyme
+- Un participant (Data Engineer / Data Architect) a communiqué ses lectures de vingt lignes DGESS ; comparaison assistée : cent valeurs concordantes, aucun écart. Fiche V4, rapport et déclaration IA actualisés avec cette méthode et cette portée.
+- Aucun code officiel affiché dans l’espace d’équipe selon le participant : EXX est conservé comme préfixe anonyme choisi, sans attente d’un identifiant non fourni.
+- Les calculs restent inchangés ; V1, V2 et V3 conservées. L’usage d’IA à la préparation initiale reste à clarifier avec les organisateurs. Aucun dépôt ni push automatique.
 
 ## 2026-11-14 — Rapport V3 centré sur la décision
 - Page 1 : trois chiffres clés et carte avant/après ; arbitrage entre les règles explicite dès l’ouverture. Rapport réduit à neuf pages et quatre figures, audits condensés et limites regroupées en partie 6.
