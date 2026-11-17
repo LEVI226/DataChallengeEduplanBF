@@ -41,7 +41,7 @@ def verifier():
         assert 'pas un taux net' in demo_rows[0]['interpretation']
         page.locator('#seuil-maitres').fill('43.8')
         page.locator('#budget-maitres').fill('9')
-        assert '1 provinces ramenées' in page.locator('#franchissement-detail').inner_text()
+        assert '1 province ramenée' in page.locator('#franchissement-detail').inner_text()
         assert '9 unités' in page.locator('#franchissement-detail').inner_text()
         page.locator('#seuil-maitres').fill('50')
         page.locator('#budget-maitres').fill('2000')

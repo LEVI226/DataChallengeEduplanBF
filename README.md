@@ -1,5 +1,41 @@
 # Planification des moyens du primaire — Data Challenge Burkina
 
+- **Application en ligne :** https://eduplanbfvercelpublic.vercel.app/
+- **Code source :** https://github.com/LEVI226/DataChallengeEduplanBF
+- **Équipe :** EduplanBf — Défi 3 (Éducation)
+
+## Livraison finale — 17 novembre 2026
+
+Sélection à déposer : `livraison_v5_EduplanBf_final/` (9 fichiers ; `MANIFESTE.json` ne se dépose pas), générée par :
+
+```
+python code/11_preparer_livraison.py --equipe EduplanBf --version 5 --sans-sources-brutes --sortie livraison_v5_EduplanBf_final
+```
+
+La notice, le LISEZ-MOI de l’archive code et la partie 7 du rapport indiquent l’application en ligne et le dépôt GitHub.
+
+## Méthode et sensibilité — 16 novembre 2026
+
+L’interface ajoute une rubrique « Comprendre la méthode », deux indicateurs territoriaux (part des inscrits dans les provinces au-dessus du seuil et écart-type non pondéré), un tableau de sensibilité aux seuils 40/50/60 et au seuil courant, et les repères de budget et de seuil sur une courbe graduée en logarithme de 1 + les unités. Le seuil ne change pas les allocations de l’égalisation ou du prorata ; les deux autres règles sont réexécutées pour chaque seuil comparé. La synthèse rappelle qu’un seuil atteint ne garantit pas des conditions d’enseignement satisfaisantes.
+
+Les données, le moteur et les tables de calcul sont conservés. Contrôle complémentaire : `python tests/verifier_methode.py` (Playwright et Chromium), avec comparaison des exports et vérification des cas décimaux, du budget nul et de l’affichage mobile. La sélection complète est `livraison_v5_EduplanBf_methode/` ; le dossier à glisser sur le projet Vercel existant est `06_preparation_depot/EduplanBf_vercel_public_methode/` (archive ZIP voisine). Les révisions précédentes sont conservées. La publication en ligne reste distincte de la préparation locale.
+
+## Interface pédagogique — 15 novembre 2026
+
+Les calculs V5 sont conservés. L’interface ajoute une synthèse automatique, des explications pour les deux ressources, un glossaire dépliable et des erreurs en français. Les identifiants des scénarios/règles et les colonnes des exports restent inchangés. Contrôle navigateur : `python tests/verifier_pedagogie.py` (Playwright et Chromium nécessaires), en complément de `python tests/verifier_interface.py`.
+
+La sélection actualisée est `livraison_v5_EduplanBf_pedagogie/`. Pour Vercel, utiliser l’archive des cinq fichiers `06_preparation_depot/EduplanBf_vercel_public_pedagogie.zip` et la déposer sur la page du projet existant. La publication en ligne reste une étape distincte.
+
+## Livraison EduplanBf — 15 novembre 2026
+
+Le nom d’équipe communiqué est **EduplanBf**. La sélection locale `livraison_v5_EduplanBf/` conserve les calculs V5 et contient neuf fichiers déposables, dont six ZIP, sans les sources originales ni les extractions brutes. Extraire les six ZIP ensemble, puis ouvrir `tableau_de_bord/index.html` : l’interface utilise les données préparées sans installation.
+
+```sh
+python code/11_preparer_livraison.py --equipe EduplanBf --version 5 --sans-sources-brutes --sortie livraison_v5_EduplanBf
+```
+
+La relance des extractions initiales exige de restaurer les sources autorisées aux chemins attendus. Les anciennes livraisons et leurs notices restent historiques. Le courriel du 13 novembre fourni par le participant confirme le challenge du 13 au 18 novembre 2026 et le rapport de quinze pages maximum. La transcription du 15 novembre précise le nom d’équipe et demande des données nettoyées et agrégées ; elle ne résout pas l’écart déclaré de préparation assistée par IA. Aucun dépôt automatique n’est réalisé.
+
 Code d'une solution au défi 3 du Data Challenge Burkina, édition Éducation 2026 : comparer des règles d'affectation des enseignants et des salles de classe entre provinces, puis explorer des scénarios conditionnels à l'horizon 2030.
 
 ## Contenu du dépôt public

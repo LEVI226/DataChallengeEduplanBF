@@ -1,5 +1,23 @@
 # Journal des changements
 
+## 2026-11-16 — Méthode, indicateurs et sensibilité au seuil
+- Rubrique méthode dépliable : mêmes noms que les contrôles, formules et arrondis, scénarios, départage stable et limites. Le seuil 50 reste un repère exploratoire ; ±10 % ne devient pas un intervalle de confiance.
+- Tableau 40/50/60 et seuil courant : besoins initiaux, provinces avant/après, maximum après et manque restant. Même allocation pour les règles indépendantes ; recalcul pour les autres, avec note sur les différences effectivement observées et repérage accessible du seuil courant.
+- Part des inscrits dans les provinces au-dessus du seuil et dispersion non pondérée reprises du moteur, avec réserves de lecture. Courbe graduée en log(1 + unités), points du tableau étendu à 40/45, budget et seuil repérés, valeurs hors plage explicites.
+- Synthèse du seuil atteint nuancée pour maîtres et salles. Moteur, données et tables conservés ; contrôles sur 56 vues, exports, seuils décimaux, zéro, saisies invalides et mobile. Livraison et paquet Vercel distincts des révisions précédentes ; aucun déploiement automatique.
+
+## 2026-11-15 — Pédagogie de l’interface EduplanBf
+- Organisation conservée : paramètres, résultats nationaux, contexte démographique et territoires. Données, moteur et tables de calcul inchangés.
+- Textes formels et accessibles, noms des règles orientés vers leur objectif, synthèse automatique avant/après pour les deux ressources, rappel des deux moyens et explication des provinces restant au-dessus du seuil.
+- Glossaire dépliable au clavier ou au toucher ; erreurs françaises associées aux champs, scénarios et axes explicités. Les résultats et exports invalides sont effacés ; les seuils décimaux restent affichés avec leur précision.
+- Vérifications : 56 vues scénario/règle/ressource, erreurs, moyens nuls et suffisants, seuils décimaux, deux exports et affichage mobile ; suite Python et moteur JavaScript. Mise à jour Vercel préparée séparément, sans publication automatique.
+
+## 2026-11-15 — Sélection de dépôt EduplanBf
+- Nom d’équipe communiqué par le participant ; générateur compatible avec les noms sans espaces et option `--sans-sources-brutes`.
+- Nouvelle sélection V5 dans un dossier distinct : neuf fichiers dont six ZIP, données préparées et interface embarquée, sources et extractions brutes exclues. Les calculs V5 et anciennes livraisons sont conservés.
+- Rapport et notice adaptés : restauration des sources nécessaire aux extractions initiales ; déclaration IA conservée. Le courriel et la transcription ne sont pas interprétés comme une autorisation de l’usage initial de l’IA.
+- Contrôle de la sélection, pagination, intégrité et empreintes ; tests Python et moteur JavaScript. Aucun envoi plateforme ni publication.
+
 ## 2026-11-14 — V5 : objectifs de répartition et lecture démographique
 - Quatrième règle : déficits entiers croissants pour maximiser les franchissements ; reliquat égalisé avec deux étapes distinctes dans les exports. La règle n'est pas présentée comme optimum conjoint des deux critères.
 - Ajouts séparés _v5 : comparaison des quatre règles, détail provincial, courbe des moyens et rapport descriptif inscriptions public+privé / population projetée de 6–11 ans. Les tables historiques restent inchangées.

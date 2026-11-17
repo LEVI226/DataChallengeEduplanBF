@@ -12,6 +12,11 @@ DECLARATION_IA = (
     "fourni dans JOURNAL_IA.md de l'archive code."
 )
 
+# Liens publics demandés par les organisateurs (rappel du 16 novembre 2026).
+LIEN_APPLICATION = 'https://eduplanbfvercelpublic.vercel.app/'
+LIEN_GITHUB = 'https://github.com/LEVI226/DataChallengeEduplanBF'
+LIENS_PUBLICS = f'Application en ligne : {LIEN_APPLICATION} — Code source (GitHub) : {LIEN_GITHUB}'
+
 
 def declaration_ia(root,version=1):
     if version<4:return DECLARATION_IA
@@ -188,7 +193,7 @@ def contenu(root,version=1):
     return blocks
 
 
-def generer_rapport(root, equipe='EXX',version=1):
+def generer_rapport(root, equipe='EXX',version=1,sans_sources_brutes=False):
     """Même contenu pour Markdown et PDF ; pagination contrôlée à quinze pages au plus."""
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, KeepTogether
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -211,6 +216,23 @@ def generer_rapport(root, equipe='EXX',version=1):
     story=[]; markdown=['# Répartir les maîtres et les salles du primaire public\n']
     for kind,value in contenu(root,version=version):
         if kind=='page': story.append(PageBreak()); continue
+        if kind in ('p','h') and equipe!='EXX':
+            value=value.replace('EXX est un préfixe anonyme choisi ; aucun code officiel n’est affiché dans l’espace d’équipe.',f'Nom d’équipe : {equipe}, conformément à la précision orale du 15 novembre 2026.').replace('EXX',equipe)
+            if value.startswith('Data Challenge Burkina ·'):value=f'{equipe} · {value}'
+            if kind=='p' and value.startswith('Consulter sans installation'):value=f'{value} {LIENS_PUBLICS}.'
+        if kind=='p' and sans_sources_brutes:
+            if value.startswith('Les sources originales restent'):
+                value='Les sources originales ne sont pas incluses dans cette sélection de dépôt. Les archives livrent les données préparées et leurs traces ; les sources restent conservées localement et dans l’espace du concours.'
+            elif value.startswith('Consulter sans installation'):
+                value=value.replace('sept ZIP','six ZIP')
+            elif value.startswith('Recalculer :'):
+                value='Recalculer : restaurer d’abord les sources autorisées aux chemins attendus, puis installer les dépendances et lancer python code/00_tout_relancer.py. L’interface fournie utilise les données préparées sans cette étape.'
+            elif value.startswith('Tests :'):
+                value=f'Tests du moteur : node tests/test_moteur.js. Les tests Python liés aux sources exigent leur restauration. Livraison : python code/11_preparer_livraison.py --equipe {equipe} --version {version} --sans-sources-brutes --sortie livraison_v5_{equipe}.'
+            elif value.startswith('Compléments :'):
+                value='Compléments : les tables préparées sont livrées. Pour les régénérer, restaurer les sources autorisées, installer Poppler (pdftotext), puis lancer python code/12_verifier_complements.py, sans API. Les notices historiques décrivent les contrôles des versions avec sources.'
+            elif value.startswith('Audit PDF ESU :'):
+                value='Audit PDF ESU : python code/08_verifier_pdf_esu.py après restauration du PDF source. Le script 09 exige le Data Pack complet. Les preuves de vérification antérieures restent consultables.'
         if kind in ('p','h'):
             story.append(Paragraph(escape(value),heading if kind=='h' else body))
             markdown.append(('## ' if kind=='h' else '')+value+'\n')
@@ -234,7 +256,7 @@ def generer_rapport(root, equipe='EXX',version=1):
             img=Image(str(path)); factor=min(480/img.imageWidth,195/img.imageHeight)
             img.drawWidth=img.imageWidth*factor;img.drawHeight=img.imageHeight*factor
             story.append(KeepTogether([img,Spacer(1,6),Paragraph(escape(cap),caption)]))
-            markdown.append(f'![{cap}](../05_interpretation/{path.name})\n')
+            markdown.append(f'![{cap}](../05_interpretation/{path.name.replace("EXX",equipe)})\n')
     md.write_text('\n'.join(markdown),encoding='utf-8')
     def footer(canvas,doc):
         canvas.saveState(); canvas.setFont('DejaVu',8);canvas.setFillColor(colors.HexColor('#647680'))

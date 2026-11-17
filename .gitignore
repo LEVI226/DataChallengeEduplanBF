@@ -34,6 +34,7 @@ __pycache__/
 
 # Rapports et audits contenant des extraits des données du concours
 /documentation/EXX_*
+/documentation/*_documentation_D3_rapport_v*.md
 /documentation/audit_sources/
 /documentation/COMPLEMENTS_WEB_2026.md
 /documentation/AUDIT_SOURCES_DATAPACK.md
@@ -49,3 +50,6 @@ __pycache__/
 /06_preparation_depot/
 
 /testAvecZAI/
+
+# Assets audiovisuels privés du concours
+/motion video/

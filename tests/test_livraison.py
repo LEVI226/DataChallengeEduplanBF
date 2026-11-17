@@ -30,6 +30,36 @@ class LivraisonTests(unittest.TestCase):
         self.assertEqual(m.adapter(source, 'EXX'), source)
         self.assertEqual(m.adapter(b'equipe\nEXX\n', 'E07'), b'equipe\nE07\n')
 
+    def test_nom_equipe_et_livraison_preparee_sans_sources(self):
+        m = self.module()
+        self.assertEqual(m.valider_equipe('EduplanBf'), 'EduplanBf')
+        with tempfile.TemporaryDirectory() as td:
+            manifeste = m.construire(equipe='EduplanBf', sortie=td, version=5,
+                                     sans_sources_brutes=True)
+            self.assertEqual(len(manifeste['fichiers_a_deposer']), 9)
+            self.assertTrue(manifeste['sans_sources_brutes'])
+            noms = []
+            for p in Path(td).glob('*.zip'):
+                with zipfile.ZipFile(p) as z:
+                    noms.extend(z.namelist())
+            self.assertIn('tableau_de_bord/donnees.js', noms)
+            self.assertFalse(any(n.startswith('00_sources/') or
+                                 'lignes-brutes' in n or
+                                 n.endswith(('.pdf', '.xlsx')) for n in noms))
+            self.assertFalse(any(n.endswith('cellules_publiees.csv') for n in noms))
+            with zipfile.ZipFile(next(Path(td).glob('*01-collecte*.zip'))) as z:
+                self.assertTrue(all(n.endswith(('LISEZ-MOI.md', 'registre_sources.json'))
+                                    for n in z.namelist()))
+            self.assertTrue(any(n.endswith('primaire_communes_provinces_2023_2024.csv')
+                                for n in noms))
+            notice = next(Path(td).glob('*notice*.md')).read_text()
+            self.assertIn('sources originales ne sont pas incluses', notice)
+            self.assertNotIn('sept ZIP', notice)
+            rapport = (RACINE/'documentation/EduplanBf_documentation_D3_rapport_v5.md').read_text()
+            self.assertNotIn('EXX', rapport)
+            self.assertNotIn('sept ZIP', rapport)
+            self.assertIn('sources originales ne sont pas incluses', rapport)
+
     def test_limites_strictes_octets_et_pages(self):
         m = self.module()
         m.valider_limites([49_999_999]*9, 15)

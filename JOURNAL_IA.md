@@ -1,5 +1,14 @@
 # Journal d'usage de l'intelligence artificielle
 
+## 2026-11-16 — Explication de la méthode et sensibilité
+À partir des précisions approuvées par le participant, Codex a enrichi l’interface de la méthode dépliable, du tableau de sensibilité et des repères de courbe, sans modifier les données, le moteur ou les tables. Les indicateurs territoriaux déjà calculés sont affichés avec leur portée : la part des inscrits décrit des provinces et l’écart-type n’est pas pondéré. Les règles dépendantes du seuil sont réexécutées pour chaque ligne de comparaison ; l’égalisation et le prorata conservent leurs ajouts. Tests navigateur, contrôles d’empreintes et relecture assistée documentent cette révision. Aucun contrôle humain ou nouveau test avec des utilisateurs réels n’est revendiqué ; l’écart initial de préparation assistée par IA reste déclaré.
+
+## 2026-11-15 — Révision pédagogique de l’interface
+Sur demande du participant, Codex a examiné le test externe et les reformulations proposées par Claude, puis réécrit les textes et les explications dynamiques de l’interface. Les généralisations erronées sur le prorata, le franchissement et la baisse du déficit ont été corrigées. La révision adapte les explications aux maîtres et aux salles, ajoute une synthèse, un glossaire accessible et des erreurs françaises. Les données, le moteur et les tables sont conservés ; les tests et la relecture restent assistés. Aucun test auprès de véritables utilisateurs ni nouvelle validation humaine n’est revendiqué.
+
+## 2026-11-15 — Audit de la réunion et sélection EduplanBf
+Codex a comparé la transcription de cadrage aux livrables V5 et au courriel du 13 novembre fourni dans la conversation. Le participant a communiqué le nom EduplanBf. Codex a adapté le générateur, le rapport et la notice pour une sélection de dépôt sans sources originales ni extractions brutes, dans un nouveau dossier. Les calculs, les hypothèses et la déclaration des usages antérieurs sont conservés. L’interface garde ses données préparées ; les extractions initiales exigent la restauration du pack autorisé. Aucun nouveau contrôle humain ou accord des organisateurs sur la préparation assistée n’est revendiqué. Aucun dépôt ni publication n’a été effectué.
+
 ## 2026-11-14 — Extension V5 assistée
 GLM a fourni une maquette à données illustratives et des pistes méthodologiques ; aucune de ses données n'est utilisée dans le modèle. Ses formules et propositions ont été relues. Une relecture Claude a proposé une lecture démographique et un objectif de franchissement. Codex a recalculé ces éléments sur les tables réelles et corrigé l'affirmation laissant le Loroum à 112,3 : il reçoit 161 postes dans l'étape de franchissement.
 

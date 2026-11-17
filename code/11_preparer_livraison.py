@@ -14,7 +14,7 @@ import zipfile
 
 RACINE = Path(__file__).resolve().parents[1]
 if str(RACINE/'code') not in sys.path: sys.path.insert(0,str(RACINE/'code'))
-from rapport_livraison import generer_rapport, DECLARATION_IA, declaration_ia
+from rapport_livraison import generer_rapport, DECLARATION_IA, declaration_ia, LIEN_APPLICATION, LIEN_GITHUB
 
 ETAPES = [('01_collecte','01-collecte','engineer'),('02_nettoyage','02-nettoyage','engineer'),('03_transformation','03-transformation','architect'),('04_analyse','04-analyse','scientist'),('05_interpretation','05-interpretation','analyst')]
 INTERDITS = {'.venv','venv','__pycache__','.DS_Store','.git','node_modules'}
@@ -22,8 +22,8 @@ TEXTES = {'.py','.md','.txt','.csv','.json','.js','.html','.css','.svg'}
 
 
 def valider_equipe(equipe):
-    if equipe != 'EXX' and re.fullmatch(r'E\d{2}',equipe) is None:
-        raise ValueError('Code anonyme attendu : EXX ou E suivi de deux chiffres, par exemple E07.')
+    if re.fullmatch(r'(?:EXX|E\d{2}|[A-Za-z][A-Za-z_-]{2,39})', equipe) is None:
+        raise ValueError('Nom d’équipe attendu sans espaces ni chemins (3–40 lettres, tirets ou soulignés), ou code EXX/E07.')
     return equipe
 
 
@@ -99,11 +99,13 @@ def produits_etape(dossier,version):
     return files
 
 
-def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1):
+def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1,sans_sources_brutes=False):
     from pypdf import PdfReader
     if type(version) is not int or version not in (1,2,3,4,5):raise ValueError('version attendue : 1, 2, 3, 4 ou 5')
     equipe=valider_equipe(equipe); root=Path(root)
     output=Path(sortie); output=output if output.is_absolute() else root/output
+    if (output/'MANIFESTE.json').exists() and json.loads((output/'MANIFESTE.json').read_text()).get('sans_sources_brutes',False)!=sans_sources_brutes:
+        raise ValueError('Le mode de sources du dossier existant est différent ; utiliser un autre dossier de sortie.')
     if (output/'MANIFESTE.json').exists() and json.loads((output/'MANIFESTE.json').read_text()).get('version')!=version:
         raise ValueError('La version du dossier existant est différente ; utiliser un autre dossier de sortie.')
     output.mkdir(parents=True,exist_ok=True)
@@ -121,28 +123,37 @@ def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1):
     # Dossier dédié seulement : ne jamais supprimer silencieusement un autre travail.
     attendus={f'{equipe}_{etape}_D3_{role}_donnees_v{version}.zip' for _,etape,role in ETAPES}
     attendus|={f'{equipe}_documentation_D3_code_v{version}.zip',f'{equipe}_documentation_D3_rapport_v{version}.pdf',f'{equipe}_documentation_D3_notice_v{version}.md',f'{equipe}_documentation_D3_usage-IA_v{version}.md','MANIFESTE.json'}
-    if version>=2:attendus.add(f'{equipe}_01-collecte_D3_engineer_sources-complementaires_v{version}.zip')
+    if version>=2 and not sans_sources_brutes:attendus.add(f'{equipe}_01-collecte_D3_engineer_sources-complementaires_v{version}.zip')
     inconnus={p.name for p in output.iterdir()}-attendus
     if inconnus: raise ValueError(f'Le dossier de sortie contient des fichiers étrangers : {sorted(inconnus)}')
-    md,pdf=generer_rapport(root,equipe,version=version)
+    md,pdf=generer_rapport(root,equipe,version=version,sans_sources_brutes=sans_sources_brutes)
     pages=len(PdfReader(pdf).pages)
+    # Liens publics affichés en tête de la notice et du LISEZ-MOI, sauf pour le préfixe anonyme EXX.
+    liens='' if equipe=='EXX' else f'- Application en ligne : {LIEN_APPLICATION}\n- Code source (GitHub) : {LIEN_GITHUB}\n\n'
+    nombre_zip=6 if sans_sources_brutes or version==1 else 7
+    nombre_fichiers=nombre_zip+3
+    reserve_sources=('Les sources originales ne sont pas incluses. Elles restent dans l’espace du concours et dans la copie locale de travail. '
+                     'Pour relancer les extractions initiales (chaîne 00, compléments 12 et audits PDF), restaurer les sources autorisées aux chemins attendus. '
+                     'L’interface embarque les données préparées et fonctionne directement sans ces sources.')
     records=[]
     def record(path,cat): records.append({'path':path.name,'category':cat})
     for dossier,etape,role in ETAPES:
         path=output/f'{equipe}_{etape}_D3_{role}_donnees_v{version}.zip'
         with zipfile.ZipFile(path,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
-            for f in produits_etape(root/dossier,version):ajouter(z,f,root,equipe)
+            for f in produits_etape(root/dossier,version):
+                if not (sans_sources_brutes and dossier=='01_collecte'):ajouter(z,f,root,equipe)
             if complement:
                 for f in complement[dossier]:
-                    if f.parent!=root/dossier:ajouter(z,f,root,equipe)
-            if dossier=='01_collecte':
+                    if f.parent!=root/dossier and (not sans_sources_brutes or dossier!='01_collecte' or f.name=='registre_sources.json'):ajouter(z,f,root,equipe)
+            if dossier=='01_collecte' and not sans_sources_brutes:
                 for f in sorted((root/'00_sources').iterdir()):
                     if f.is_file() and f.suffix in {'.pdf','.xlsx'}: ajouter(z,f,root,equipe,original=True)
                 for f in sources_minimales(root): ajouter(z,f,root,equipe,original=True)
                 ajouter(z,root/'01_collecte/limites_administratives/bfa_admin2.geojson',root,equipe,original=True)
-            notice_archive(z,dossier,f'# Étape {etape}\n\nExtraire à la racine commune aux {7 if version>=2 else 6} archives. Les chemins recréent {dossier}/ sans dossier redondant.\nLes produits et leurs traces sont fournis ici. La collecte fournit les sources minimales originales au chemin attendu.\nReproduction : python code/00_tout_relancer.py ; voir LISEZ-MOI.md à la racine de l’archive code.\n')
+            description=reserve_sources if sans_sources_brutes else 'La collecte fournit les sources minimales originales au chemin attendu. Reproduction : python code/00_tout_relancer.py.'
+            notice_archive(z,dossier,f'# Étape {etape}\n\nExtraire à la racine commune aux {nombre_zip} archives. Les chemins recréent {dossier}/ sans dossier redondant.\nLes produits et leurs traces sont fournis ici. {description}\nVoir LISEZ-MOI.md à la racine de l’archive code.\n')
         verifier_archive(path);record(path,f'donnees_{etape}')
-    if complement:
+    if complement and not sans_sources_brutes:
         supp=output/f'{equipe}_01-collecte_D3_engineer_sources-complementaires_v{version}.zip'
         with zipfile.ZipFile(supp,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
             for f in complement['sources']:ajouter(z,f,root,equipe,original=True)
@@ -155,7 +166,10 @@ def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1):
                 if f.is_file() and chemin_autorise(f.relative_to(root).as_posix()): ajouter(z,f,root,equipe)
         if complement:
             for f in complement['code']:ajouter(z,f,root,equipe)
-        for f in [root/'LISEZ-MOI.md',root/'JOURNAL_IA.md',root/'CHANGELOG.md',*sorted(root.glob('requirements*.txt'))]: ajouter(z,f,root,equipe)
+        for f in [root/'LISEZ-MOI.md',root/'JOURNAL_IA.md',root/'CHANGELOG.md',*sorted(root.glob('requirements*.txt'))]:
+            if sans_sources_brutes and f.name=='LISEZ-MOI.md':
+                z.writestr('LISEZ-MOI.md', f'# Livraison {equipe} — données préparées\n\n{liens}Extraire les six ZIP ensemble, puis ouvrir tableau_de_bord/index.html.\n\n{reserve_sources}\n\nLes documents de vérification datés et le journal décrivent les versions historiques avec leurs sources. Ils ne constituent pas une nouvelle validation de cette sélection.\n')
+            else:ajouter(z,f,root,equipe)
         for f in sorted((root/'documentation').rglob('*')):
             rel=f.relative_to(root).as_posix()
             if version>=4 and f.name.startswith('FICHE_CONTROLE_HUMAIN_v3.'):continue
@@ -178,7 +192,7 @@ def construire(root=RACINE,equipe='EXX',sortie='livraison_v1',version=1):
 
 Pour consulter sans installation : extraire les sept ZIP à partir de V2 (six en V1) dans un même dossier, puis ouvrir tableau_de_bord/index.html. Aucun Python ni réseau n’est requis pour utiliser l’interface fournie.
 
-{10 if version>=2 else 9} fichiers à déposer ; MANIFESTE.json est un contrôle voisin, à ne pas déposer.
+{nombre_fichiers} fichiers à déposer ; MANIFESTE.json est un contrôle voisin, à ne pas déposer.
 
 | Fichier | Catégorie | Octets |
 | --- | --- | ---: |
@@ -197,16 +211,26 @@ Versions : V{version} désigne le rapport et les archives. Les noms internes _v1
 
 Déclaration IA : {declaration}
 '''
-        previous=notice.stat().st_size;notice.write_text(value,encoding='utf-8')
+        previous=notice.stat().st_size
+        if sans_sources_brutes:
+            value=value.replace('les sept ZIP à partir de V2 (six en V1)','les six ZIP')
+            debut=value.index('Extraire les ', value.index('Rapport :'))
+            fin=value.index('\nVersions :', debut)
+            value=value[:debut]+reserve_sources+'\nTests du moteur sur exemples synthétiques : node tests/test_moteur.js. Les tests Python qui lisent les sources nécessitent leur restauration.\n'+value[fin:]
+        value=value.replace('Préfixe EXX anonyme choisi : aucun code officiel affiché dans l’espace d’équipe.',f'Nom d’équipe : {equipe}, utilisé conformément à la précision orale du 15 novembre 2026.')
+        if sans_sources_brutes:value=value.replace('# Notice de livraison —', f'# Notice de livraison {equipe} —')
+        if liens:value=value.replace('\n\n',f'\n\n{liens}',1)
+        notice.write_text(value,encoding='utf-8')
         if notice.stat().st_size==previous: break
     for r in records:
         p=output/r['path'];r['size']=p.stat().st_size;r['sha256']=hashlib.sha256(p.read_bytes()).hexdigest()
-    if len(records)!=(10 if version>=2 else 9): raise ValueError('Nombre de fichiers déposables inattendu.')
+    if len(records)!=nombre_fichiers: raise ValueError('Nombre de fichiers déposables inattendu.')
     valider_limites([r['size'] for r in records],pages)
     metadata=PdfReader(pdf).metadata
     if metadata.author: raise ValueError('Auteur PDF non vide.')
     if not 20<=len(declaration)<=2000: raise ValueError('Déclaration IA hors limites.')
     manifeste={'version':version,'equipe':equipe,'rapport_pages':pages,'total_bytes':sum(r['size'] for r in records),'fichiers_a_deposer':records,'manifest_non_deposable':True}
+    manifeste['sans_sources_brutes']=sans_sources_brutes
     (output/'MANIFESTE.json').write_text(json.dumps(manifeste,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print(json.dumps({'dossier':output.name,'fichiers':len(records),'pages':pages,'octets':manifeste['total_bytes']},ensure_ascii=False))
     return manifeste
@@ -216,6 +240,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--equipe',default='EXX');parser.add_argument('--sortie',default='livraison_v1')
     parser.add_argument('--version',type=int,choices=[1,2,3,4,5],default=1)
-    args=parser.parse_args(); construire(equipe=args.equipe,sortie=args.sortie,version=args.version)
+    parser.add_argument('--sans-sources-brutes',action='store_true',help='Déposer les données préparées sans les sources originales ; leur restauration est nécessaire pour les extractions initiales.')
+    args=parser.parse_args(); construire(equipe=args.equipe,sortie=args.sortie,version=args.version,sans_sources_brutes=args.sans_sources_brutes)
 
 if __name__=='__main__': main()
